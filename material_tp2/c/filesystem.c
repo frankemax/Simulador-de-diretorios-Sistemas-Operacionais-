@@ -114,46 +114,54 @@ int main(void)
 		write_block("filesystem.dat", i, data_block);
 
 	char entrada[25];
-	char exit[]="exit";
-	while (1==1)
+	char exit[] = "exit";
+	while (1 == 1)
 	{
 		printf("digite um comando: \n");
 		gets(entrada);
 		printf("O comando digitado foi: %s\n", entrada);
 
-		if(!strcmp(entrada,"exit")){
+		if (!strcmp(entrada, "exit"))
+		{
 			printf("tnc\n");
 			break;
 		}
+
+		//ta listando apenas do root
+		else if (!strcmp(entrada, "ls"))
+		{
+			for (i = 0; i < DIR_ENTRIES; i++)
+			{
+				read_dir_entry(ROOT_BLOCK, i, &dir_entry);
+				printf("Entry %d, file: %s attr: %d first: %d size: %d\n", i, dir_entry.filename, dir_entry.attributes, dir_entry.first_block, dir_entry.size);
+			}
+		}
+
+		else if (!strcmp(entrada, "create"))
+		{
+			memset((char *)dir_entry.filename, 0, sizeof(struct dir_entry_s));
+			strcpy((char *)dir_entry.filename, "file1");
+			dir_entry.attributes = 0x01;
+			dir_entry.first_block = 1111;
+			dir_entry.size = 222;
+			write_dir_entry(ROOT_BLOCK, 0, &dir_entry);
+		}
 	}
 	/* fill three root directory entries and list them */
-	memset((char *)dir_entry.filename, 0, sizeof(struct dir_entry_s));
-	strcpy((char *)dir_entry.filename, "file1");
-	dir_entry.attributes = 0x01;
-	dir_entry.first_block = 1111;
-	dir_entry.size = 222;
-	write_dir_entry(ROOT_BLOCK, 0, &dir_entry);
 
-	memset((char *)dir_entry.filename, 0, sizeof(struct dir_entry_s));
-	strcpy((char *)dir_entry.filename, "file2");
-	dir_entry.attributes = 0x01;
-	dir_entry.first_block = 2222;
-	dir_entry.size = 333;
-	write_dir_entry(ROOT_BLOCK, 1, &dir_entry);
+	// memset((char *)dir_entry.filename, 0, sizeof(struct dir_entry_s));
+	// strcpy((char *)dir_entry.filename, "file2");
+	// dir_entry.attributes = 0x01;
+	// dir_entry.first_block = 2222;
+	// dir_entry.size = 333;
+	// write_dir_entry(ROOT_BLOCK, 1, &dir_entry);
 
-	memset((char *)dir_entry.filename, 0, sizeof(struct dir_entry_s));
-	strcpy((char *)dir_entry.filename, "file1");
-	dir_entry.attributes = 0x01;
-	dir_entry.first_block = 3333;
-	dir_entry.size = 444;
-	write_dir_entry(ROOT_BLOCK, 2, &dir_entry);
-
-	/* list entries from the root directory */
-	for (i = 0; i < DIR_ENTRIES; i++)
-	{
-		read_dir_entry(ROOT_BLOCK, i, &dir_entry);
-		printf("Entry %d, file: %s attr: %d first: %d size: %d\n", i, dir_entry.filename, dir_entry.attributes, dir_entry.first_block, dir_entry.size);
-	}
+	// memset((char *)dir_entry.filename, 0, sizeof(struct dir_entry_s));
+	// strcpy((char *)dir_entry.filename, "file1");
+	// dir_entry.attributes = 0x01;
+	// dir_entry.first_block = 3333;
+	// dir_entry.size = 444;
+	// write_dir_entry(ROOT_BLOCK, 2, &dir_entry);
 
 	return 0;
 }
