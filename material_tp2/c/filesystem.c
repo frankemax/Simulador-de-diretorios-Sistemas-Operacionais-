@@ -2,13 +2,13 @@
 #include <stdint.h>
 #include <string.h>
 
-#define BLOCK_SIZE		1024
-#define BLOCKS			2048
-#define FAT_SIZE		(BLOCKS * 2)
-#define FAT_BLOCKS		(FAT_SIZE / BLOCK_SIZE)
-#define ROOT_BLOCK		FAT_BLOCKS
-#define DIR_ENTRY_SIZE		32
-#define DIR_ENTRIES		(BLOCK_SIZE / DIR_ENTRY_SIZE)
+#define BLOCK_SIZE 1024
+#define BLOCKS 2048
+#define FAT_SIZE (BLOCKS * 2)
+#define FAT_BLOCKS (FAT_SIZE / BLOCK_SIZE)
+#define ROOT_BLOCK FAT_BLOCKS
+#define DIR_ENTRY_SIZE 32
+#define DIR_ENTRIES (BLOCK_SIZE / DIR_ENTRY_SIZE)
 
 /* FAT data structure */
 int16_t fat[BLOCKS];
@@ -16,7 +16,8 @@ int16_t fat[BLOCKS];
 int8_t data_block[BLOCK_SIZE];
 
 /* directory entry */
-struct dir_entry_s {
+struct dir_entry_s
+{
 	int8_t filename[25];
 	int8_t attributes;
 	int16_t first_block;
@@ -112,6 +113,19 @@ int main(void)
 	for (i = ROOT_BLOCK + 1; i < BLOCKS; i++)
 		write_block("filesystem.dat", i, data_block);
 
+	char entrada[25];
+	char exit[]="exit";
+	while (1==1)
+	{
+		printf("digite um comando: \n");
+		gets(entrada);
+		printf("O comando digitado foi: %s\n", entrada);
+
+		if(!strcmp(entrada,"exit")){
+			printf("tnc\n");
+			break;
+		}
+	}
 	/* fill three root directory entries and list them */
 	memset((char *)dir_entry.filename, 0, sizeof(struct dir_entry_s));
 	strcpy((char *)dir_entry.filename, "file1");
@@ -135,7 +149,8 @@ int main(void)
 	write_dir_entry(ROOT_BLOCK, 2, &dir_entry);
 
 	/* list entries from the root directory */
-	for (i = 0; i < DIR_ENTRIES; i++) {
+	for (i = 0; i < DIR_ENTRIES; i++)
+	{
 		read_dir_entry(ROOT_BLOCK, i, &dir_entry);
 		printf("Entry %d, file: %s attr: %d first: %d size: %d\n", i, dir_entry.filename, dir_entry.attributes, dir_entry.first_block, dir_entry.size);
 	}
