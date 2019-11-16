@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Scanner;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
@@ -17,6 +18,7 @@ public class FileSystem {
 	static int root_block = fat_blocks;
 	static int dir_entry_size = 32;
 	static int dir_entries = block_size / dir_entry_size;
+	static String currentPath= "root"; 
 
 	/* FAT data structure */
 	final static short[] fat = new short[blocks];
@@ -24,14 +26,14 @@ public class FileSystem {
 	final static byte[] data_block = new byte[block_size];
 
 	/* reads a data block from disk */
-	public static byte[] readBlock(String file, int block) {
-		byte[] record = new byte[block_size];
+	public static byte[] readBlock(final String file, final int block) {
+		final byte[] record = new byte[block_size];
 		try {
-			RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
+			final RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
 			fileStore.seek(block * block_size);
 			fileStore.read(record, 0, block_size);
 			fileStore.close();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 
@@ -39,27 +41,27 @@ public class FileSystem {
 	}
 
 	/* writes a data block to disk */
-	public static void writeBlock(String file, int block, byte[] record) {
+	public static void writeBlock(final String file, final int block, final byte[] record) {
 		try {
-			RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
+			final RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
 			fileStore.seek(block * block_size);
 			fileStore.write(record, 0, block_size);
 			fileStore.close();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	/* reads the FAT from disk */
-	public static short[] readFat(String file) {
-		short[] record = new short[blocks];
+	public static short[] readFat(final String file) {
+		final short[] record = new short[blocks];
 		try {
-			RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
+			final RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
 			fileStore.seek(0);
 			for (int i = 0; i < blocks; i++)
 				record[i] = fileStore.readShort();
 			fileStore.close();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 
@@ -67,24 +69,24 @@ public class FileSystem {
 	}
 
 	/* writes the FAT to disk */
-	public static void writeFat(String file, short[] fat) {
+	public static void writeFat(final String file, final short[] fat) {
 		try {
-			RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
+			final RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
 			fileStore.seek(0);
 			for (int i = 0; i < blocks; i++)
 				fileStore.writeShort(fat[i]);
 			fileStore.close();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	/* reads a directory entry from a directory */
-	public static DirEntry readDirEntry(int block, int entry) {
-		byte[] bytes = readBlock("filesystem.dat", block);
-		ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-		DataInputStream in = new DataInputStream(bis);
-		DirEntry dir_entry = new DirEntry();
+	public static DirEntry readDirEntry(final int block, final int entry) {
+		final byte[] bytes = readBlock("filesystem.dat", block);
+		final ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+		final DataInputStream in = new DataInputStream(bis);
+		final DirEntry dir_entry = new DirEntry();
 
 		try {
 			in.skipBytes(entry * dir_entry_size);
@@ -94,7 +96,7 @@ public class FileSystem {
 			dir_entry.attributes = in.readByte();
 			dir_entry.first_block = in.readShort();
 			dir_entry.size = in.readInt();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 
@@ -102,12 +104,12 @@ public class FileSystem {
 	}
 
 	/* writes a directory entry in a directory */
-	public static void writeDirEntry(int block, int entry, DirEntry dir_entry) {
-		byte[] bytes = readBlock("filesystem.dat", block);
-		ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-		DataInputStream in = new DataInputStream(bis);
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DataOutputStream out = new DataOutputStream(bos);
+	public static void writeDirEntry(final int block, final int entry, final DirEntry dir_entry) {
+		final byte[] bytes = readBlock("filesystem.dat", block);
+		final ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+		final DataInputStream in = new DataInputStream(bis);
+		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		final DataOutputStream out = new DataOutputStream(bos);
 
 		try {
 			for (int i = 0; i < entry * dir_entry_size; i++)
@@ -124,17 +126,17 @@ public class FileSystem {
 
 			for (int i = entry + 1; i < entry * dir_entry_size; i++)
 				out.writeByte(in.readByte());
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 
-		byte[] bytes2 = bos.toByteArray();
+		final byte[] bytes2 = bos.toByteArray();
 		for (int i = 0; i < bytes2.length; i++)
 			data_block[i] = bytes2[i];
 		writeBlock("filesystem.dat", block, data_block);
 	}
 
-	public static void main(String args[]) {
+	public static void init() {
 		/* initialize the FAT */
 		for (int i = 0; i < fat_blocks; i++)
 			fat[i] = 0x7ffe;
@@ -154,6 +156,25 @@ public class FileSystem {
 		/* write the remaining data blocks to disk */
 		for (int i = root_block + 1; i < blocks; i++)
 			writeBlock("filesystem.dat", i, data_block);
+	}
+
+	public static void findDir(String[] caminho, int index){
+		if(currentPath.equals("root")){
+			
+		}
+		if(currentPath.equals(caminho[index])){
+			//return null;
+		}
+		
+
+	}
+
+	public static void mkdir(String path){
+		String[] caminho = path.split("/");
+		//findDir(caminho);
+	}
+
+	public static void main(final String args[]) {
 
 		/* fill three root directory entries and list them */
 		DirEntry dir_entry = new DirEntry();
@@ -165,6 +186,31 @@ public class FileSystem {
 		dir_entry.first_block = 1111;
 		dir_entry.size = 222;
 		writeDirEntry(root_block, 0, dir_entry);
+
+		laco: while (true) {
+			System.out.print("testShell@Shell:~" + currentPath + "$ ");
+			Scanner sc = new Scanner(System.in);
+			String input = sc.nextLine();
+			System.out.println();
+			switch (input) {
+			case "exit":
+				break laco;
+			case "init":
+				init();
+				break;
+			case "ls":
+				break;
+			case "load":
+				break;
+			case "mkdir":
+				break;
+			case "create":
+				break;
+			case "unlink":
+				break;
+			
+			}
+		}
 
 		name = "file2";
 		namebytes = name.getBytes();
@@ -187,8 +233,8 @@ public class FileSystem {
 		/* list entries from the root directory */
 		for (int i = 0; i < dir_entries; i++) {
 			dir_entry = readDirEntry(root_block, i);
-			System.out.println("Entry " + i + ", file: " + new String(dir_entry.filename) + " attr: " +
-			dir_entry.attributes + " first: " + dir_entry.first_block + " size: " + dir_entry.size);
+			System.out.println("Entry " + i + ", file: " + new String(dir_entry.filename) + " attr: "
+					+ dir_entry.attributes + " first: " + dir_entry.first_block + " size: " + dir_entry.size);
 		}
 	}
 }
