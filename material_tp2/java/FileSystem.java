@@ -158,36 +158,60 @@ public class FileSystem {
 			writeBlock("filesystem.dat", i, data_block);
 	}
 
-	public static DirEntry findDir(String[] caminho, int index) {
-		if (currentPath.equals("root")) {
-			for (int i : dir_entry) {
+	public static DirEntry instanciaDir(String nome, byte atributos, short first_block, int size) {
+		DirEntry dir_entry = new DirEntry();
+		String name = nome;
+		byte[] namebytes = name.getBytes();
+		for (int j = 0; j < namebytes.length; j++)
+			dir_entry.filename[j] = namebytes[j];
+		dir_entry.attributes = atributos;
+		dir_entry.first_block = first_block;
+		dir_entry.size = size;
+		return dir_entry;
+	}
 
+	public static int verificaVazio(int block, String nome) {
+		DirEntry dir_entry = new DirEntry();
+		for (int i = 0; i < dir_entries; i++) {
+			dir_entry = readDirEntry(block, i);
+			if (new String(dir_entry.filename).equals(nome)) {
+				System.out.println("Nome já existe");
+				return -1;
 			}
 		}
-		if (currentPath.equals(caminho[index])) {
-			// return null;
+		for (int i = 0; i < dir_entries; i++) {
+			if (new String(dir_entry.filename).equals("")) {
+				System.out.println("Nome vazio, alocando o arquivo, pode colocar o arquivo");
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	public static void procuraDiretorioeCria(String[] caminho, short bloco, int count) {
+		DirEntry dir_entry = new DirEntry();
+		if (caminho.length - 1 == count) {
+			DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 1, (short) bloco, 20);
+			writeDirEntry(bloco, verificaVazio(bloco, caminho[caminho.length - 1]), entry);
+		}
+		else{
+			byte[] arrByte = caminho[count].getBytes();
+			
 		}
 
 	}
 
-	public static void mkdir(String path){
+	public static void mkdir(String path, int i) {
 		String[] caminho = path.split("/");
-		
-		DirEntry dir_entry = new DirEntry();
-		String name = "file1";
-		byte[] namebytes = name.getBytes();
-		for (int i = 0; i < namebytes.length; i++)
-			dir_entry.filename[i] = namebytes[i];
-		dir_entry.attributes = 0x01;
-		dir_entry.first_block = 1111;
-		dir_entry.size = 222;
-		int blockFinal;
-		//blockFinal= findDir(caminho);
-		actualDir = readDirEntry(block, entry);
-		writeDirEntry(root_block, 0, dir_entry);
+
+		if (caminho[i].equals("root")) {
+			DirEntry entry = instanciaDir("a", (byte) 12, (short) 1212, 200);
+
+			writeDirEntry(root_block, verificaVazio(root_block, "a"), entry);
+		}
 	}
 
-	public static void listRoot() {
+	public static void ls() {
 		DirEntry dir_entry = new DirEntry();
 		for (int i = 0; i < dir_entries; i++) {
 			dir_entry = readDirEntry(root_block, i);
@@ -199,34 +223,40 @@ public class FileSystem {
 	public static void main(final String args[]) {
 
 		/* fill three root directory entries and list them */
-		// DirEntry dir_entry = new DirEntry();
-		// String name = "file1";
-		// byte[] namebytes = name.getBytes();
-		// for (int i = 0; i < namebytes.length; i++)
-		// dir_entry.filename[i] = namebytes[i];
-		// dir_entry.attributes = 0x01;
-		// dir_entry.first_block = 1111;
-		// dir_entry.size = 222;
+		DirEntry dir_entry = new DirEntry();
+		String name = "file1";
+		byte[] namebytes = name.getBytes();
+		for (int i = 0; i < namebytes.length; i++)
+			dir_entry.filename[i] = namebytes[i];
+		dir_entry.attributes = 0x01;
+		dir_entry.first_block = 1111;
+		dir_entry.size = 222;
 		writeDirEntry(root_block, 0, dir_entry);
 
 		laco: while (true) {
 			System.out.print("testShell@Shell:~" + currentPath + "$ ");
 			Scanner sc = new Scanner(System.in);
 			String input = sc.nextLine();
+			String[] inputArr = input.split(" ");
 			System.out.println();
-			switch (input) {
+			switch (inputArr[0]) {
 			case "exit":
 				break laco;
 			case "init":
 				init();
 				break;
 			case "ls":
+				ls();
 				break;
 			case "load":
+
 				break;
 			case "mkdir":
+				mkdir(inputArr[1]);
+
 				break;
 			case "create":
+
 				break;
 			case "unlink":
 				break;
@@ -234,29 +264,7 @@ public class FileSystem {
 			}
 		}
 
-		name = "file2";
-		namebytes = name.getBytes();
-		for (int i = 0; i < namebytes.length; i++)
-			dir_entry.filename[i] = namebytes[i];
-		dir_entry.attributes = 0x01;
-		dir_entry.first_block = 2222;
-		dir_entry.size = 333;
-		writeDirEntry(root_block, 1, dir_entry);
-
-		name = "file3";
-		namebytes = name.getBytes();
-		for (int i = 0; i < namebytes.length; i++)
-			dir_entry.filename[i] = namebytes[i];
-		dir_entry.attributes = 0x01;
-		dir_entry.first_block = 4444;
-		dir_entry.size = 444;
-		writeDirEntry(root_block, 2, dir_entry); // bloco pra escrever / posicao do bloco / direntry
-
 		/* list entries from the root directory */
-		for (int i = 0; i < dir_entries; i++) {
-			dir_entry = readDirEntry(root_block, i);
-			System.out.println("Entry " + i + ", file: " + new String(dir_entry.filename) + " attr: "
-					+ dir_entry.attributes + " first: " + dir_entry.first_block + " size: " + dir_entry.size);
-		}
+
 	}
 }
