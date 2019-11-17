@@ -198,6 +198,23 @@ public class FileSystem {
         return -1;
     }
 
+    private static boolean equal(byte[] t, byte[] p) {
+        boolean n = false;
+        int i = t.length;
+        if (p.length < i) {
+            i = p.length;
+        }
+        for (int j = 0; j < i; j++) {
+            if (t[j] == p[j]) {
+                n = true;
+            } else {
+                n = false;
+                break;
+            }
+        }
+        return n;
+    }
+
     private static boolean existeNoBloco(int blocoAtual, String path) {
 
         boolean n = false;
@@ -206,6 +223,7 @@ public class FileSystem {
             DirEntry p = readDirEntry(blocoAtual, i);
 
             for (int j = 0; j < path.length(); j++) {
+                
                 if (t[j] == p.filename[j]) {
                     n = true;
                 } else {
@@ -238,7 +256,7 @@ public class FileSystem {
         DirEntry dir_entry = new DirEntry();
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
-                System.out.println("O diretório chamado " + caminho[count] + " ja existe");
+                System.out.println("O arquivo/entrada de diretório chamado " + caminho[count] + " já existe");
                 return;
             }
 
@@ -250,16 +268,22 @@ public class FileSystem {
             writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry);
 
         } else {
-            boolean tem = true;
-            byte[] diretorioAtual = caminho[count].getBytes();
-            for (int i = 0; i < dir_entries; i++) {
-                dir_entry = readDirEntry(root_block, i);
+            boolean found = false;
 
-                //entra no diretorio
-                if (dir_entry.filename == diretorioAtual) {
-                    procuraDiretorioeCria(caminho, dir_entry.first_block, count + 1);
-                    break;
+            byte[] file = caminho[count].getBytes();
+
+            for (int i = 0; i < 32 && found == false; i++) {
+                DirEntry entry = readDirEntry(blocoAtual, i);
+
+                if (equal(entry.filename, caminho[count].getBytes())) {
+                    found = true;
+
+                    procuraDiretorioeCria(caminho, entry.first_block, count + 1);
                 }
+            }
+
+            if (found == false) {
+                System.out.println("Não há nenhum diretório chamado /" + caminho[count]);
             }
         }
     }
@@ -312,5 +336,6 @@ public class FileSystem {
             }
         }
 
+        /* list entries from the root directory */
     }
 }
