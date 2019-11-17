@@ -241,8 +241,12 @@ public class FileSystem {
 
     public static short primeiroBlocoVazioDaFat() {
         for (int i = 5; i < fat_size; i++) {
+            System.out.printf("fat[%d] = %d \n",i,fat[i]);
             if (fat[i] == 0) {
+                System.out.println("entrou");
+
                 return (short) i;
+
             }
         }
         System.out.println("FAT TA LOTADA");
@@ -430,21 +434,16 @@ public class FileSystem {
     }
     public static void procuraDiretorioeUnlinka(String[] caminho, short blocoAtual, int count) {
 
-        short firstBlock = primeiroBlocoVazioDaFat();
+        //short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
                 System.out.println("O arquivo chamado " + caminho[count] + " ja existe");
-                fat[firstBlock] = 0x0;
+                fat[blocoAtual+existeNoBlocoInt(blocoAtual, caminho[count])+1] = (short) 0;
                 writeFat("filesystem.dat", fat);
-                byte[] a = new byte[25];
                 DirEntry entry = instanciaDir("", (byte) 0, (short)0, 0);
                 writeDirEntry(blocoAtual, existeNoBlocoInt(blocoAtual,caminho[count]), entry);
 
-                for (int i = 0; i < block_size; i++) {
-                    data_block[i] = 0;
-                }
-
-                writeBlock("filesystem.dat", firstBlock, data_block);
+                //writeBlock("filesystem.dat", data_block, data_block);
                 return;
             }
 
@@ -500,10 +499,10 @@ public class FileSystem {
                         ls(null);
                     }
                     else
-                    ls(inputArr[1]);
+                        ls(inputArr[1]);
                     break;
                 case "load":
-
+                    primeiroBlocoVazioDaFat();
                     break;
                 case "mkdir":
                     mkdir(inputArr[1]);
