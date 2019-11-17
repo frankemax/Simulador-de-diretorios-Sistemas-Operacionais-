@@ -269,14 +269,14 @@ public class FileSystem {
             for (int i = 0; i < block_size; i++) {
                 data_block[i] = 0;
             }
-            
+
             writeBlock("filesystem.dat", firstBlock, data_block);
         } else {
             boolean found = false;
 
             byte[] file = caminho[count].getBytes();
 
-            for (int i = 0; i < 32 && found == false; i++) {
+            for (int i = 0; i < dir_entry_size && found == false; i++) {
                 DirEntry entry = readDirEntry(blocoAtual, i);
 
                 if (equal(entry.filename, caminho[count].getBytes())) {
@@ -295,16 +295,57 @@ public class FileSystem {
     public static void mkdir(String path) {
         String[] caminho = path.split("/");
         procuraDiretorioeCria(caminho, (short) root_block, 0);
-
     }
 
-    public static void ls() {
+    public static void lsAuxiliar(String[] caminho, short blocoAtual, int count){
         DirEntry dir_entry = new DirEntry();
-        for (int i = 0; i < dir_entries; i++) {
-            dir_entry = readDirEntry(root_block, i);
-            System.out.println("Entry " + i + ", file: " + new String(dir_entry.filename) + " attr: "
-                    + dir_entry.attributes + " first: " + dir_entry.first_block + " size: " + dir_entry.size);
+
+
+        if (caminho.length  == count) {
+            for (int i = 0; i < dir_entries; i++) {
+                dir_entry = readDirEntry(blocoAtual, i);
+                System.out.println("Entry " + i + ", file: " + new String(dir_entry.filename) + " attr: "
+                        + dir_entry.attributes + " first: " + dir_entry.first_block + " size: " + dir_entry.size);
+            }
+
+        } else {
+            boolean found = false;
+
+            byte[] file = caminho[count].getBytes();
+
+            for (int i = 0; i < dir_entry_size && found == false; i++) {
+                DirEntry entry = readDirEntry(blocoAtual, i);
+
+                if (equal(entry.filename, caminho[count].getBytes())) {
+                    found = true;
+
+                    lsAuxiliar(caminho, entry.first_block, count + 1);
+                }
+            }
+
+            if (found == false) {
+                System.out.println("Não há nenhum diretório chamado /" + caminho[count]);
+            }
         }
+    }
+
+
+    public static void ls(String path) {
+        DirEntry dir_entry = new DirEntry();
+
+        if(path==null){
+            for (int i = 0; i < dir_entries; i++) {
+                dir_entry = readDirEntry(root_block, i);
+                System.out.println("Entry " + i + ", file: " + new String(dir_entry.filename) + " attr: "
+                        + dir_entry.attributes + " first: " + dir_entry.first_block + " size: " + dir_entry.size);
+            }
+            return;
+        }
+        String[] caminho = path.split("/");
+
+        lsAuxiliar(caminho, (short) root_block, 0);
+
+
     }
 
     public static void main(final String args[]) {
@@ -323,7 +364,12 @@ public class FileSystem {
                     init();
                     break;
                 case "ls":
-                    ls();
+                    if(inputArr.length==1) {
+                        ls(null);
+                    }
+                    else
+                    ls(inputArr[1]);
+
                     break;
                 case "load":
 
