@@ -13,6 +13,7 @@ import java.io.DataInputStream;
 import java.io.FilterInputStream;
 
 public class FileSystem {
+
     static int block_size = 1024;
     static int blocks = 2048;
     static int fat_size = blocks * 2;
@@ -60,8 +61,9 @@ public class FileSystem {
         try {
             final RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
             fileStore.seek(0);
-            for (int i = 0; i < blocks; i++)
+            for (int i = 0; i < blocks; i++) {
                 record[i] = fileStore.readShort();
+            }
             fileStore.close();
         } catch (final IOException e) {
             e.printStackTrace();
@@ -75,8 +77,9 @@ public class FileSystem {
         try {
             final RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
             fileStore.seek(0);
-            for (int i = 0; i < blocks; i++)
+            for (int i = 0; i < blocks; i++) {
                 fileStore.writeShort(fat[i]);
+            }
             fileStore.close();
         } catch (final IOException e) {
             e.printStackTrace();
@@ -93,8 +96,9 @@ public class FileSystem {
         try {
             in.skipBytes(entry * dir_entry_size);
 
-            for (int i = 0; i < 25; i++)
+            for (int i = 0; i < 25; i++) {
                 dir_entry.filename[i] = in.readByte();
+            }
             dir_entry.attributes = in.readByte();
             dir_entry.first_block = in.readShort();
             dir_entry.size = in.readInt();
@@ -114,58 +118,68 @@ public class FileSystem {
         final DataOutputStream out = new DataOutputStream(bos);
 
         try {
-            for (int i = 0; i < entry * dir_entry_size; i++)
+            for (int i = 0; i < entry * dir_entry_size; i++) {
                 out.writeByte(in.readByte());
+            }
 
-            for (int i = 0; i < dir_entry_size; i++)
+            for (int i = 0; i < dir_entry_size; i++) {
                 in.readByte();
+            }
 
-            for (int i = 0; i < 25; i++)
+            for (int i = 0; i < 25; i++) {
                 out.writeByte(dir_entry.filename[i]);
+            }
             out.writeByte(dir_entry.attributes);
             out.writeShort(dir_entry.first_block);
             out.writeInt(dir_entry.size);
 
-            for (int i = entry + 1; i < entry * dir_entry_size; i++)
+            for (int i = entry + 1; i < entry * dir_entry_size; i++) {
                 out.writeByte(in.readByte());
+            }
         } catch (final IOException e) {
             e.printStackTrace();
         }
 
         final byte[] bytes2 = bos.toByteArray();
-        for (int i = 0; i < bytes2.length; i++)
+        for (int i = 0; i < bytes2.length; i++) {
             data_block[i] = bytes2[i];
+        }
         writeBlock("filesystem.dat", block, data_block);
     }
 
     public static void init() {
         /* initialize the FAT */
-        for (int i = 0; i < fat_blocks; i++)
+        for (int i = 0; i < fat_blocks; i++) {
             fat[i] = 0x7ffe;
+        }
         fat[root_block] = 0x7fff;
-        for (int i = root_block + 1; i < blocks; i++)
+        for (int i = root_block + 1; i < blocks; i++) {
             fat[i] = 0;
+        }
         /* write it to disk */
         writeFat("filesystem.dat", fat);
 
         /* initialize an empty data block */
-        for (int i = 0; i < block_size; i++)
+        for (int i = 0; i < block_size; i++) {
             data_block[i] = 0;
+        }
 
         /* write an empty ROOT directory block */
         writeBlock("filesystem.dat", root_block, data_block);
 
         /* write the remaining data blocks to disk */
-        for (int i = root_block + 1; i < blocks; i++)
+        for (int i = root_block + 1; i < blocks; i++) {
             writeBlock("filesystem.dat", i, data_block);
+        }
     }
 
     public static DirEntry instanciaDir(String nome, byte atributos, short first_block, int size) {
         DirEntry dir_entry = new DirEntry();
         String name = nome;
         byte[] namebytes = name.getBytes();
-        for (int j = 0; j < namebytes.length; j++)
+        for (int j = 0; j < namebytes.length; j++) {
             dir_entry.filename[j] = namebytes[j];
+        }
         dir_entry.attributes = atributos;
         dir_entry.first_block = first_block;
         dir_entry.size = size;
@@ -184,52 +198,64 @@ public class FileSystem {
         return -1;
     }
 
+    private static boolean existeNoBloco(int blocoAtual, String path) {
 
-    public static short primeiroBlocoVazioDaFat(){
-        for(int i=5; i<fat_size;i++){
-            if(fat[i]==0){
+        boolean n = false;
+        byte[] t = path.getBytes();
+        for (int i = 0; i < 32; i++) {
+            DirEntry p = readDirEntry(blocoAtual, i);
+
+            for (int j = 0; j < path.length(); j++) {
+                if (t[j] == p.filename[j]) {
+                    n = true;
+                } else {
+                    n = false;
+                }
+            }
+            if (n) {
+                break;
+            }
+        }
+
+        return n;
+    }
+
+    public static short primeiroBlocoVazioDaFat() {
+        for (int i = 5; i < fat_size; i++) {
+            if (fat[i] == 0) {
                 return (short) i;
             }
         }
         System.out.println("FAT TA LOTADA");
         return -1;
     }
+
     //0x01 - arquivo
     //0x02 - diretorio
     public static void procuraDiretorioeCria(String[] caminho, short blocoAtual, int count) {
 
         DirEntry dir_entry = new DirEntry();
         if (caminho.length - 1 == count) {
-            for(int i=0; i<32; i++){
-                DirEntry entry = readDirEntry(blocoAtual, i);
-
-                System.out.println("filename: " + entry.filename.toString());
-                System.out.println("caminho: " + caminho[count].getBytes().toString());
-                if(entry.filename == caminho[count].getBytes()){
-
-                    System.out.println("JA EXISTE RETARDADO");
-                    return;
-                }
+            if (existeNoBloco(blocoAtual, caminho[count])) {
+                System.out.println("O arquivo/entrada de diretório chamado " + caminho[count] + " já existe");
             }
 
             short firstBlock = primeiroBlocoVazioDaFat();
-            fat[firstBlock]=0x7fff;
+            fat[firstBlock] = 0x7fff;
             writeFat("filesystem.dat", fat);
 
             DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x02, (short) blocoAtual, 0);
             writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry);
 
-
-        }
-        else{
-            boolean tem=true;
+        } else {
+            boolean tem = true;
             byte[] diretorioAtual = caminho[count].getBytes();
             for (int i = 0; i < dir_entries; i++) {
                 dir_entry = readDirEntry(root_block, i);
 
                 //entra no diretorio
-                if(dir_entry.filename==diretorioAtual){
-                    procuraDiretorioeCria(caminho,dir_entry.first_block,count+1);
+                if (dir_entry.filename == diretorioAtual) {
+                    procuraDiretorioeCria(caminho, dir_entry.first_block, count + 1);
                     break;
                 }
             }
@@ -238,7 +264,7 @@ public class FileSystem {
 
     public static void mkdir(String path) {
         String[] caminho = path.split("/");
-        procuraDiretorioeCria(caminho,(short)root_block,0);
+        procuraDiretorioeCria(caminho, (short) root_block, 0);
 
     }
 
@@ -253,7 +279,8 @@ public class FileSystem {
 
     public static void main(final String args[]) {
 
-        laco: while (true) {
+        laco:
+        while (true) {
             System.out.print("testShell@Shell:~" + "$ ");
             Scanner sc = new Scanner(System.in);
             String input = sc.nextLine();
@@ -284,6 +311,5 @@ public class FileSystem {
         }
 
         /* list entries from the root directory */
-
     }
 }
