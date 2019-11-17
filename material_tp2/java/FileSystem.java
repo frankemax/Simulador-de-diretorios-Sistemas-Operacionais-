@@ -223,7 +223,7 @@ public class FileSystem {
             DirEntry p = readDirEntry(blocoAtual, i);
 
             for (int j = 0; j < path.length(); j++) {
-                
+
                 if (t[j] == p.filename[j]) {
                     n = true;
                 } else {
@@ -254,19 +254,23 @@ public class FileSystem {
     public static void procuraDiretorioeCria(String[] caminho, short blocoAtual, int count) {
 
         DirEntry dir_entry = new DirEntry();
+        short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
                 System.out.println("O arquivo/entrada de diretório chamado " + caminho[count] + " já existe");
                 return;
             }
-
-            short firstBlock = primeiroBlocoVazioDaFat();
             fat[firstBlock] = 0x7fff;
             writeFat("filesystem.dat", fat);
 
-            DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x02, (short) blocoAtual, 0);
+            DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x02, firstBlock, 0);
             writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry);
 
+            for (int i = 0; i < block_size; i++) {
+                data_block[i] = 0;
+            }
+            
+            writeBlock("filesystem.dat", firstBlock, data_block);
         } else {
             boolean found = false;
 
