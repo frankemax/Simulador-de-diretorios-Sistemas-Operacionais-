@@ -429,32 +429,24 @@ public class FileSystem {
         return -1;
     }
     public static void procuraDiretorioeUnlinka(String[] caminho, short blocoAtual, int count) {
-        DirEntry dir_entry = new DirEntry();
 
+        short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
+                System.out.println("O arquivo chamado " + caminho[count] + " ja existe");
+                fat[firstBlock] = 0x0;
+                writeFat("filesystem.dat", fat);
+                byte[] a = new byte[25];
+                DirEntry entry = instanciaDir("", (byte) 0, (short)0, 0);
+                writeDirEntry(blocoAtual, existeNoBlocoInt(blocoAtual,caminho[count]), entry);
+
                 for (int i = 0; i < block_size; i++) {
                     data_block[i] = 0;
                 }
 
-                int aux = existeNoBlocoInt(blocoAtual,caminho[count]);
-
-                //System.out.println("O arquivo chamado " + caminho[count] + " ja existe");
-
-
-                fat[aux] = 0x0000;
-                writeFat("filesystem.dat", fat);
-
-
-                writeBlock("filesystem.dat", aux, data_block);
-                return;
-
-            }
-            else{
-                System.out.println("O arquivo chamado " + caminho[count] + " nao existe");
+                writeBlock("filesystem.dat", firstBlock, data_block);
                 return;
             }
-
 
         } else {
             boolean found = false;
@@ -470,7 +462,7 @@ public class FileSystem {
                         System.out.println("O caminho especificado não é um diretório, e sim um arquivo");
                         break;
                     }
-                    procuraDiretorioeCriaArquivo(caminho, entry.first_block, count + 1);
+                    procuraDiretorioeUnlinka(caminho, entry.first_block, count + 1);
                 }
             }
 
