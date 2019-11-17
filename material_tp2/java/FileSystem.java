@@ -210,6 +210,7 @@ public class FileSystem {
                     n = true;
                 } else {
                     n = false;
+                    break;
                 }
             }
             if (n) {
@@ -237,7 +238,8 @@ public class FileSystem {
         DirEntry dir_entry = new DirEntry();
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
-                System.out.println("O arquivo/entrada de diretório chamado " + caminho[count] + " já existe");
+                System.out.println("O diretório chamado " + caminho[count] + " ja existe");
+                return;
             }
 
             short firstBlock = primeiroBlocoVazioDaFat();
@@ -310,6 +312,5 @@ public class FileSystem {
             }
         }
 
-        /* list entries from the root directory */
     }
 }
