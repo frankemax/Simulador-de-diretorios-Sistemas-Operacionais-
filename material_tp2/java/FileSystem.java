@@ -243,7 +243,7 @@ public class FileSystem {
         for (int i = 5; i < fat_size; i++) {
             System.out.printf("fat[%d] = %d \n",i,fat[i]);
             if (fat[i] == 0) {
-                System.out.println("entrou");
+                //System.out.println("entrou");
 
                 return (short) i;
 
@@ -361,7 +361,6 @@ public class FileSystem {
     //0x02 - diretorio
     public static void procuraDiretorioeCriaArquivo(String[] caminho, short blocoAtual, int count) {
 
-        DirEntry dir_entry = new DirEntry();
         short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
@@ -410,6 +409,24 @@ public class FileSystem {
         procuraDiretorioeCriaArquivo(caminho, (short) root_block, 0);
     }
 
+    private static boolean isTheFirstOne(int blocoAtual, String path) {
+
+        boolean n = false;
+        byte[] t = path.getBytes();
+        DirEntry p = readDirEntry(blocoAtual, 0);
+
+            for (int j = 0; j < path.length(); j++) {
+
+                if (t[j] == p.filename[j]) {
+                    n = true;
+                } else {
+                    n = false;
+                    break;
+                }
+            }
+        return n;
+    }
+
     private static int existeNoBlocoInt(int blocoAtual, String path) {
         boolean n = false;
         byte[] t = path.getBytes();
@@ -437,14 +454,35 @@ public class FileSystem {
         //short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
-                System.out.println("O arquivo chamado " + caminho[count] + " ja existe");
+                if(isTheFirstOne(blocoAtual,caminho[count])){
+                    System.out.println("é a primeira nessa bosta");
+                    DirEntry entry = readDirEntry(blocoAtual,0);
+                    entry.first_block=0;
+                    byte[] a= new byte[25];
+                    entry.filename=a;
+                    entry.size=0;
+
+                    fat[blocoAtual+existeNoBlocoInt(blocoAtual, caminho[count])+1] = (short) 0;
+                    writeFat("filesystem.dat", fat);
+                    writeBlock("filesystem.dat", blocoAtual+existeNoBlocoInt(blocoAtual, caminho[count])+1, data_block);
+
+
+                    writeDirEntry(blocoAtual, existeNoBlocoInt(blocoAtual,caminho[count]+1), entry);
+                }
+                else{
+
+                DirEntry entry = instanciaDir("", (byte) 0x00, fat[blocoAtual+existeNoBlocoInt(blocoAtual, caminho[count])+1], 0);
+                entry.first_block=(short)0;
+
                 fat[blocoAtual+existeNoBlocoInt(blocoAtual, caminho[count])+1] = (short) 0;
                 writeFat("filesystem.dat", fat);
-                DirEntry entry = instanciaDir("", (byte) 0, (short)0, 0);
+                writeBlock("filesystem.dat", blocoAtual+existeNoBlocoInt(blocoAtual, caminho[count])+1, data_block);
+
+
                 writeDirEntry(blocoAtual, existeNoBlocoInt(blocoAtual,caminho[count]), entry);
 
-                //writeBlock("filesystem.dat", data_block, data_block);
                 return;
+                }
             }
 
         } else {
@@ -471,7 +509,71 @@ public class FileSystem {
         }
     }
 
+    private static void writeAux( String[] caminho,short blocoAtual,int count,String str) {
+        DirEntry dir_entry = new DirEntry();
+        short firstBlock = primeiroBlocoVazioDaFat();
+        if (caminho.length - 1 == count) {
+            if (!existeNoBloco(blocoAtual, caminho[count])) {
+                System.out.println("O arquivo/entrada de diretório chamado " + caminho[count] + " nao existe");
+                return;
+            }
+            int aux=0;
+            for (int i = 0; i < dir_entry_size; i++) {
+                DirEntry entry = readDirEntry(blocoAtual, i);
 
+                if (equal(entry.filename, caminho[count].getBytes())) {
+                    aux=i;
+                    if(entry.attributes == (byte) 0x02){
+                        System.out.println("O caminho especificado é um diretório, e nao um arquivo");
+                        return;
+                    }
+                }
+            }
+
+
+
+            fat[firstBlock] = 0x7fff;
+            writeFat("filesystem.dat", fat);
+            byte[] arr= str.getBytes();
+
+            //DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x02, firstBlock, arr.length);
+
+            DirEntry read = readDirEntry(firstBlock,aux);
+            read.size=arr.length;
+            writeDirEntry(blocoAtual, aux, read);
+
+
+            for (int i = 0; i < arr.length; i++) {
+                data_block[i]=arr[i];
+            }
+
+
+            writeBlock("filesystem.dat", firstBlock, data_block);
+
+
+        } else {
+            boolean found = false;
+
+            byte[] file = caminho[count].getBytes();
+
+            for (int i = 0; i < dir_entry_size && found == false; i++) {
+                DirEntry entry = readDirEntry(blocoAtual, i);
+
+                if (equal(entry.filename, caminho[count].getBytes())) {
+                    found = true;
+                    if(entry.attributes == (byte) 0x01){
+                        System.out.println("O caminho especificado não é um diretório, e sim um arquivo");
+                        break;
+                    }
+                    writeAux(caminho, entry.first_block, count + 1,str);
+                }
+            }
+
+            if (found == false) {
+                System.out.println("Não há nenhum diretório chamado /" + caminho[count]);
+            }
+        }
+    }
 
     public static void unlink (String path){
         String[] caminho = path.split("/");
@@ -479,6 +581,18 @@ public class FileSystem {
 
 
     }
+
+    public static void write(String str, String path){
+        String[] caminho = path.split("/");
+        if(str.getBytes().length>1023){
+            //to do
+        }
+        else{
+            writeAux(caminho,(short)root_block,0,str);
+        }
+    }
+
+
 
     public static void main(final String[] args) {
         laco:
@@ -503,6 +617,9 @@ public class FileSystem {
                     break;
                 case "load":
                     primeiroBlocoVazioDaFat();
+                    break;
+                case "write":
+                    write(inputArr[1],inputArr[2]);
                     break;
                 case "mkdir":
                     mkdir(inputArr[1]);
