@@ -173,6 +173,7 @@ public class FileSystem {
         }
     }
 
+
     public static DirEntry instanciaDir(String nome, byte atributos, short first_block, int size) {
         DirEntry dir_entry = new DirEntry();
         String name = nome;
@@ -458,23 +459,25 @@ public class FileSystem {
                     DirEntry entry = readDirEntry(blocoAtual, i);
                     if (equal(entry.filename, caminho[count].getBytes())) {
                         aux = i;
-
                     }
                 }
 
                 DirEntry entry = readDirEntry(blocoAtual, aux);
                 fat[entry.first_block]=0;
                 entry.attributes=0;
-                entry.filename="".getBytes();
+                byte[] file = new byte[25];
+                entry.filename=file;
                 entry.first_block=0;
                 entry.size=0;
 
                 //writeDirEntry(blocoAtual,(short) aux, entry);
-                writeBlock("filesystem.dat", blocoAtual, data_block);
+                //writeBlock("filesystem.dat", blocoAtual, data_block);
+
+                writeDirEntry(blocoAtual, aux, entry);
                 fat[entry.first_block]=0;
                 fat[blocoAtual + existeNoBlocoInt(blocoAtual, caminho[count]) + 1] = (short) 0;
                 writeFat("filesystem.dat", fat);
-                writeBlock("filesystem.dat", blocoAtual + existeNoBlocoInt(blocoAtual, caminho[count]) + 1, data_block);
+                //writeBlock("filesystem.dat", blocoAtual + existeNoBlocoInt(blocoAtual, caminho[count]) + 1, data_block);
 
 
 
