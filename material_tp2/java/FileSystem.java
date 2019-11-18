@@ -530,11 +530,33 @@ public class FileSystem {
             }
 
             byte[] arr = str.getBytes();
+            for (byte i:  arr) {
+                System.out.println(i);
+            }
+
+
+            DirEntry entry1 = readDirEntry(blocoAtual, aux);
+            int blocoIniTam  = entry1.first_block;
+
+            byte[] bloco = data_block;
+
+
+            for (int i = 0; i < arr.length; i++) {
+                bloco[i]=arr[i];
+            }
+
+
+
+
+            System.out.println();
             DirEntry entry = readDirEntry(blocoAtual, aux);
             entry.size = arr.length;
+            writeBlock("filesystem.dat", entry.first_block, bloco);
 
-            writeDirEntry(blocoAtual, aux, entry);
-            writeBlock("filesystem.dat", blocoAtual, data_block);
+
+            //writeDirEntry(blocoAtual, aux, entry);
+
+
         } else {
             boolean found = false;
 
