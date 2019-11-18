@@ -530,17 +530,15 @@ public class FileSystem {
                 }
             }
 
+           //fat[firstBlock] = 0;
 
-
-            fat[firstBlock] = 0x7fff;
             writeFat("filesystem.dat", fat);
             byte[] arr= str.getBytes();
 
-            //DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x02, firstBlock, arr.length);
-
-            DirEntry read = readDirEntry(firstBlock,aux);
-            read.size=arr.length;
-            writeDirEntry(blocoAtual, aux, read);
+            DirEntry entry = readDirEntry(blocoAtual,aux);
+            entry.size=(int) arr.length;
+            //DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x01, (short)primeiroBlocoVazioDaFat(), arr.length);
+            writeDirEntry(blocoAtual, aux, entry);
 
 
             for (int i = 0; i < arr.length; i++) {
@@ -548,7 +546,7 @@ public class FileSystem {
             }
 
 
-            writeBlock("filesystem.dat", firstBlock, data_block);
+            writeBlock("filesystem.dat", aux, data_block);
 
 
         } else {
