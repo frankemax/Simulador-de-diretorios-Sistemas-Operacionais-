@@ -373,7 +373,7 @@ public class FileSystem {
             DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x01, firstBlock, 0);
             writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry);
 
-            for (int i = 0; i < block_size; i++) {
+            for (int i = 0; i < 32; i++) {
                 data_block[i] = 0;
             }
 
@@ -510,8 +510,8 @@ public class FileSystem {
     }
 
     private static void writeAux( String[] caminho,short blocoAtual,int count,String str) {
-        DirEntry dir_entry = new DirEntry();
-        short firstBlock = primeiroBlocoVazioDaFat();
+
+        //short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
             if (!existeNoBloco(blocoAtual, caminho[count])) {
                 System.out.println("O arquivo/entrada de diretório chamado " + caminho[count] + " nao existe");
@@ -520,7 +520,6 @@ public class FileSystem {
             int aux=0;
             for (int i = 0; i < dir_entry_size; i++) {
                 DirEntry entry = readDirEntry(blocoAtual, i);
-
                 if (equal(entry.filename, caminho[count].getBytes())) {
                     aux=i;
                     if(entry.attributes == (byte) 0x02){
@@ -530,25 +529,12 @@ public class FileSystem {
                 }
             }
 
-           //fat[firstBlock] = 0;
-
-            writeFat("filesystem.dat", fat);
             byte[] arr= str.getBytes();
-
             DirEntry entry = readDirEntry(blocoAtual,aux);
-            entry.size=(int) arr.length;
-            //DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x01, (short)primeiroBlocoVazioDaFat(), arr.length);
+            entry.size= arr.length;
+
             writeDirEntry(blocoAtual, aux, entry);
-
-
-            for (int i = 0; i < arr.length; i++) {
-                data_block[i]=arr[i];
-            }
-
-
-            writeBlock("filesystem.dat", aux, data_block);
-
-
+            writeBlock("filesystem.dat", blocoAtual, data_block);
         } else {
             boolean found = false;
 
