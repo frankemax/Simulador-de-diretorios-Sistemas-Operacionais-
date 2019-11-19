@@ -373,7 +373,7 @@ public class FileSystem {
             DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x01, firstBlock, 0);
             writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry);
 
-            for (int i = 0; i < 32; i++) {
+            for (int i = 0; i < block_size; i++) {
                 data_block[i] = 0;
             }
 
