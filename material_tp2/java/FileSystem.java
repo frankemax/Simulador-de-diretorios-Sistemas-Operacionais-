@@ -553,7 +553,9 @@ public class FileSystem {
             entry.size = arr.length;
             writeBlock("filesystem.dat", entry.first_block, bloco);
 
-
+            for (int i = 0; i < block_size; i++) {
+                data_block[i] = 0;
+            }
             //writeDirEntry(blocoAtual, aux, entry);
 
 
@@ -589,7 +591,7 @@ public class FileSystem {
 
     public static void write(String str, String path) {
         String[] caminho = path.split("/");
-        if (str.getBytes().length > 1023) {
+        if (str.getBytes().length > 1024) {
             // to do
         } else {
             writeAux(caminho, (short) root_block, 0, str);
