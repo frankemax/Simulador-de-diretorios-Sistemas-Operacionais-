@@ -511,29 +511,31 @@ public class FileSystem {
         String[] caminho = path.split("/");
         System.out.println("TESTE " + (str.getBytes().length > 1024));
         if (str.getBytes().length > 1024) {
-            System.out.println("PQP");
             int var = (int) Math.ceil(str.getBytes().length / 1024.0);
             String message = "";
             for (int i = 0; i < var; i++) {
                 if ((i * 1024) + 1024 > str.length()) {
-                    System.out.println("a");
                     message = str.substring(i * 1024, str.length());
                 } else {
-                    System.out.println("b");
                     message = str.substring(i * 1024, (i * 1024) + 1024);
                 }
                 short s = writeAux(caminho, (short) root_block, 0, message);
-                System.out.println("aaa" + s);
-                System.out.println(fat[s]);
+                //System.out.println("\n\naaa" + s);
+                //System.out.println(fat[s]);
                 if (s > -1) {
                     if (i == var - 1) {
                         fat[s] = 0x7fff;
+                        System.out.println("Entrei IF");
+                        System.out.println(s);
                     } else {
+                        System.out.println("To no ELSE");
+                        fat[s] = 0x7fff;
                         fat[s] = primeiroBlocoVazioDaFat(false);
+                        System.out.println(s);
                     }
 
                 } else {
-                    System.out.println("Erro");
+                    System.out.println("Erro " + s);
                     return;
                 }
             }
@@ -557,6 +559,7 @@ public class FileSystem {
             }
             int aux = 0;
             for (int i = 0; i < dir_entry_size; i++) {
+
                 DirEntry entry = readDirEntry(blocoAtual, i);
                 if (equal(entry.filename, caminho[count].getBytes())) {
                     aux = i;
@@ -569,9 +572,6 @@ public class FileSystem {
 
             byte[] arr = str.getBytes();
 
-            DirEntry entry1 = readDirEntry(blocoAtual, aux);
-            int blocoIniTam = entry1.first_block;
-
             byte[] bloco = data_block;
 
             for (int i = 0; i < arr.length; i++) {
@@ -580,8 +580,14 @@ public class FileSystem {
             for (int i = arr.length; i < bloco.length; i++) {
                 bloco[i] = 0;
             }
+            if (!(fat[readDirEntry(blocoAtual, aux).first_block] != 0x7fff)) {
+                aux = existeNoBlocoInt(readDirEntry(blocoAtual, aux).first_block, caminho[count]);
+                System.out.println("AUX " + aux);
+            }
+            DirEntry entry = readDirEntry(blocoAtual, aux+5);
+            
+            System.out.println("FATTTT " + fat[entry.first_block]);
 
-            DirEntry entry = readDirEntry(blocoAtual, aux);
             entry.size = arr.length;
             writeBlock("filesystem.dat", entry.first_block, bloco);
 
