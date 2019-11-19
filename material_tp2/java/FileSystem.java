@@ -110,7 +110,7 @@ public class FileSystem {
     }
 
     /* writes a directory entry in a directory */
-    public static void writeDirEntry(final int block, final int entry, final DirEntry dir_entry) {
+    public static void writeDirEntry(final int block, final int entry, final DirEntry dir_entry, byte[] data_block) {
         final byte[] bytes = readBlock("filesystem.dat", block);
         final ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         final DataInputStream in = new DataInputStream(bis);
@@ -257,8 +257,7 @@ public class FileSystem {
     // 0x01 - arquivo
     // 0x02 - diretorio
     public static void procuraDiretorioeCria(String[] caminho, short blocoAtual, int count) {
-
-        DirEntry dir_entry = new DirEntry();
+        byte[] db;
         short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
@@ -268,18 +267,15 @@ public class FileSystem {
             fat[firstBlock] = 0x7fff;
             writeFat("filesystem.dat", fat);
 
+
             DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x02, firstBlock, 0);
-            writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry);
+            db = readBlock("filesystem.dat",blocoAtual);
+            writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry,db);
 
-            for (int i = 0; i < block_size; i++) {
-                data_block[i] = 0;
-            }
 
-            writeBlock("filesystem.dat", firstBlock, data_block);
         } else {
             boolean found = false;
 
-            byte[] file = caminho[count].getBytes();
 
             for (int i = 0; i < dir_entry_size && found == false; i++) {
                 DirEntry entry = readDirEntry(blocoAtual, i);
@@ -360,6 +356,7 @@ public class FileSystem {
     // 0x01 - arquivo
     // 0x02 - diretorio
     public static void procuraDiretorioeCriaArquivo(String[] caminho, short blocoAtual, int count) {
+        byte[] db;
 
         short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
@@ -371,13 +368,11 @@ public class FileSystem {
             writeFat("filesystem.dat", fat);
 
             DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x01, firstBlock, 0);
-            writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry);
+            db = readBlock("filesystem.dat",blocoAtual);
+            writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry,db);
 
-            for (int i = 0; i < block_size; i++) {
-                data_block[i] = 0;
-            }
 
-            writeBlock("filesystem.dat", firstBlock, data_block);
+            //writeBlock("filesystem.dat", firstBlock, data_block);
         } else {
             boolean found = false;
 
@@ -449,7 +444,8 @@ public class FileSystem {
     }
 
     public static void procuraDiretorioeUnlinka(String[] caminho, short blocoAtual, int count) {
-
+        //to do -> verificar se a pasta ta vazia
+    byte[] db;
         // short firstBlock = primeiroBlocoVazioDaFat();
         int aux=0;
         if (caminho.length - 1 == count) {
@@ -462,21 +458,20 @@ public class FileSystem {
                     }
                 }
 
-                DirEntry entry = readDirEntry(blocoAtual, aux);
-                fat[entry.first_block]=0;
-                entry.attributes=0;
                 byte[] file = new byte[25];
-                entry.filename=file;
-                entry.first_block=0;
-                entry.size=0;
-
-                //writeDirEntry(blocoAtual,(short) aux, entry);
-                //writeBlock("filesystem.dat", blocoAtual, data_block);
-
-                writeDirEntry(blocoAtual, aux, entry);
+                //byte atributos, short first_block, int size)
+                DirEntry entry = readDirEntry(blocoAtual,aux);
                 fat[entry.first_block]=0;
-                fat[blocoAtual + existeNoBlocoInt(blocoAtual, caminho[count]) + 1] = (short) 0;
                 writeFat("filesystem.dat", fat);
+                 entry = instanciaDir("",(byte)0,(short)0,0);
+
+
+                db = readBlock("filesystem.dat",blocoAtual);
+
+                writeDirEntry(blocoAtual, aux, entry,db);
+
+
+
                 //writeBlock("filesystem.dat", blocoAtual + existeNoBlocoInt(blocoAtual, caminho[count]) + 1, data_block);
 
 
@@ -548,10 +543,6 @@ public class FileSystem {
                 bloco[i]=0;
             }
 
-
-
-
-            System.out.println();
             DirEntry entry = readDirEntry(blocoAtual, aux);
             entry.size = arr.length;
             writeBlock("filesystem.dat", entry.first_block, bloco);
@@ -564,8 +555,6 @@ public class FileSystem {
 
         } else {
             boolean found = false;
-
-            byte[] file = caminho[count].getBytes();
 
             for (int i = 0; i < dir_entry_size && found == false; i++) {
                 DirEntry entry = readDirEntry(blocoAtual, i);
