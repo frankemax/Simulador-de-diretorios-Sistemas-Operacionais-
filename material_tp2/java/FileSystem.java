@@ -890,7 +890,9 @@ public class FileSystem {
             }
 
             entry.size = size;
+            
             writeBlock("filesystem.dat", entry.first_block, bloco);
+            writeDirEntry(blocoAtual, aux, entry, bloco);
 
             for (int i = 0; i < block_size; i++) {
                 data_block[i] = 0;
