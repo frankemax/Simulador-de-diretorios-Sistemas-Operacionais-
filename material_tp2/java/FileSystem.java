@@ -256,26 +256,26 @@ public class FileSystem {
     }
 
     public static void apagaEncadeado(short n) {
-        System.out.println("n = " +n);
+        System.out.println("n = " + n);
         short a;
 
         while (fat[n] != 0x7fff) {
 
-            System.out.println("fat" +fat[n]);
-            a=fat[n];
+            System.out.println("fat" + fat[n]);
+            a = fat[n];
             apagaEncadeadoAux(n);
-
-            n = a;
-            System.out.println("n2 = " +n);
-            if(n>=2048){
+            
+            if(a == 0x7fff || a == 32766){
                 break;
             }
+            n = a;
+            System.out.println("n2 = " + n);
         }
         apagaEncadeadoAux(n);
     }
 
     public static void apagaEncadeadoAux(short pos) {
-        if(pos >=2048){
+        if(pos >= 2048){
             return;
         }
         byte[] db;
@@ -287,7 +287,6 @@ public class FileSystem {
         writeFat("filesystem.dat", fat);
         writeBlock("filesystem.dat", pos, db);
     }
-
 
     // 0x01 - arquivo
     // 0x02 - diretorio
@@ -339,8 +338,9 @@ public class FileSystem {
         if (caminho.length == count) {
             for (int i = 0; i < dir_entries; i++) {
                 dir_entry = readDirEntry(blocoAtual, i);
-                if(dir_entry.attributes!= 0)
-                    System.out.println((dir_entry.attributes==0x01?"Arquivo:   " + new String(dir_entry.filename):"Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
+                if (dir_entry.attributes != 0) {
+                    System.out.println((dir_entry.attributes == 0x01 ? "Arquivo:   " + new String(dir_entry.filename) : "Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
+                }
             }
 
         } else {
@@ -375,8 +375,9 @@ public class FileSystem {
         if (path == null) {
             for (int i = 0; i < dir_entries; i++) {
                 dir_entry = readDirEntry(root_block, i);
-                if(dir_entry.attributes!= 0)
-                    System.out.println((dir_entry.attributes==0x01?"Arquivo:   " + new String(dir_entry.filename):"Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
+                if (dir_entry.attributes != 0) {
+                    System.out.println((dir_entry.attributes == 0x01 ? "Arquivo:   " + new String(dir_entry.filename) : "Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
+                }
             }
             return;
         }
@@ -437,9 +438,9 @@ public class FileSystem {
         for (int i = 0; i < 32; i++) {
             DirEntry p = readDirEntry(blocoAtual, i);
 
-                if (p.attributes!=0){
-                    return true;
-                }
+            if (p.attributes != 0) {
+                return true;
+            }
 
         }
 
@@ -473,14 +474,12 @@ public class FileSystem {
                 }
                 DirEntry entry = readDirEntry(blocoAtual, aux);
 
-                if(blocoIsEmpty(entry.first_block) && entry.attributes==0x02){
+                if (blocoIsEmpty(entry.first_block) && entry.attributes == 0x02) {
                     System.out.println("O diretório especificado não está vazio, nao foi possível exclui-lo");
                     return;
                 }
 
-
                 //byte atributos, short first_block, int size)
-
                 percorreFateLimpaBloco(entry.first_block);
                 apagaEncadeado(entry.first_block);
                 fat[entry.first_block] = 0;
@@ -523,8 +522,8 @@ public class FileSystem {
     public static short[] getListFat(int n, String[] caminho) {
         int count = 1;
         short[] s = new short[n];
-        System.out.println("bloco " + getBlocoString(caminho,(short)root_block,0));
-        s[0]=  getBlocoString(caminho,(short)root_block,0);
+        System.out.println("bloco " + getBlocoString(caminho, (short) root_block, 0));
+        s[0] = getBlocoString(caminho, (short) root_block, 0);
         for (int i = 5; i < fat_size; i++) {
             if (fat[i] == 0) {
                 s[count] = (short) i;
@@ -542,7 +541,7 @@ public class FileSystem {
         if (str.getBytes().length > 1024) {
             writeCerto(caminho, str);
         } else {
-            writeAux(caminho, (short) root_block, 0, str,(short)-1,-1);
+            writeAux(caminho, (short) root_block, 0, str, (short) -1, -1);
         }
     }
 
@@ -565,9 +564,8 @@ public class FileSystem {
                     }
                 }
             }
-            DirEntry entry = readDirEntry(blocoAtual,aux);
+            DirEntry entry = readDirEntry(blocoAtual, aux);
             return entry.first_block;
-
 
         } else {
             boolean found = false;
@@ -596,11 +594,8 @@ public class FileSystem {
         return -1;
     }
 
-
-
-
-
     public static void writeCerto(String[] caminho, String str) {
+        
         int var = (int) Math.ceil(str.getBytes().length / 1024.0);
         short[] lista = getListFat(var, caminho);
         String[] text = new String[var];
@@ -673,7 +668,6 @@ public class FileSystem {
                 bloco[i] = 0;
             }
 
-
             if (size != -1) {
 
                 entry.size = size;
@@ -713,14 +707,14 @@ public class FileSystem {
 
     public static void readEncadeado(short n) {
         byte[] bloco;
-        if(n<2048) {
+        if (n < 2048) {
 
             while (fat[n] != 0x7fff) {
                 bloco = readBlock("filesystem.dat", n);
                 System.out.println(new String(bloco));
 
                 n = fat[n];
-                if(n>=2048){
+                if (n >= 2048) {
                     break;
                 }
             }
@@ -871,7 +865,7 @@ public class FileSystem {
     }
 
     public static void main(final String[] args) {
-        fat=readFat("filesystem.dat");
+        fat = readFat("filesystem.dat");
         laco:
         while (true) {
             System.out.print("\ntestShell@user:~" + "$ ");
@@ -914,7 +908,7 @@ public class FileSystem {
                     read(inputArr[1]);
                     break;
                 case "apaga":
-                    apagaEncadeado((short)5);
+                    apagaEncadeado((short) 5);
             }
         }
 
