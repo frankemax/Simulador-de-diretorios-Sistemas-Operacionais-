@@ -890,7 +890,6 @@ public class FileSystem {
             }
 
             entry.size = size;
-            System.out.println(entry);
             writeBlock("filesystem.dat", entry.first_block, bloco);
 
             for (int i = 0; i < block_size; i++) {
