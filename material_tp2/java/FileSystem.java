@@ -439,6 +439,17 @@ public class FileSystem {
         return -1;
     }
 
+    public static void percorreFateLimpaBloco(short bloco){
+        byte[] db;
+        System.out.println("bloco fat= " + bloco);
+
+        db = readBlock("filesystem.dat",bloco);
+        for (int i = 0; i < block_size; i++) {
+            db[i]=0;
+        }
+        writeBlock("filesystem.dat",bloco,db);
+    }
+
     public static void procuraDiretorioeUnlinka(String[] caminho, short blocoAtual, int count) {
         //to do -> verificar se a pasta ta vazia
         byte[] db;
@@ -457,9 +468,11 @@ public class FileSystem {
                 byte[] file = new byte[25];
                 //byte atributos, short first_block, int size)
                 DirEntry entry = readDirEntry(blocoAtual, aux);
+                percorreFateLimpaBloco(entry.first_block);
                 fat[entry.first_block] = 0;
                 writeFat("filesystem.dat", fat);
                 entry = instanciaDir("", (byte) 0, (short) 0, 0);
+
 
                 db = readBlock("filesystem.dat", blocoAtual);
 
