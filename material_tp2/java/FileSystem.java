@@ -824,7 +824,6 @@ public class FileSystem {
         String[] caminho = path.split("/");
         int b = getBlocoTam(caminho, (short) root_block, 0);
         int tam = b + str.getBytes().length;
-        //System.out.println("AQUI " + tam);
         if (tam >= 1024) {
             int var = (int) Math.ceil(tam / 1024.0);
             short[] lista = getListFat(var, caminho);
@@ -832,21 +831,15 @@ public class FileSystem {
             String cortada = str.substring(0, 1024 - b);
             text[0] = cortada;
             appendAux(caminho, (short) root_block, 0, text[0], tam);
-
-            str = str.substring(1024 - b, str.length());
-            var = (int) Math.ceil(str.length() / 1024.0);
-
-            for (int i = 0; i < var - 1; i++) {
-                System.out.println(str.length()+" UUUU" + ((i * 1024) + 1024));
-                if (((i * 1024) + 1024) > str.length()) {
-                    break;
-                }
-                text[i] = str.substring(i * (1024), (i * 1024) + 1024);
+            
+            str = str.substring(cortada.length(), str.length());
+            for (int i = 0; i < var - 2; i++) {
+                text[i+1] = str.substring(i * (1024), (i * 1024) + 1024);
             }
-            text[var - 1] = str.substring((var - 1) * 1024, str.length());
-           // System.out.println("FINAL "+text[0].length());
+            text[var - 1] = str.substring((var - 2) * 1024, str.length());
 
-            for (int i = 0; i < var - 1; i++) {
+            for (int i = 1; i < var - 1; i++) {
+                System.out.println(i);
                 metododoshell(lista[i], lista[i + 1], text[i]);
             }
             metododoshell(lista[var - 1], (short) 0x7fff, text[var - 1]);
@@ -883,12 +876,11 @@ public class FileSystem {
             int pedra = 0;
             for (int i = 0; i < bloco.length; i++) {
                 if (bloco[i] == 0) {
-                    //System.out.println();
+                    System.out.println();
                     pedra = i;
                     break;
                 }
             }
-            //System.out.println("aaaaaa" + (pedra));
             for (int i = pedra; i < pedra + arr.length; i++) {
                 bloco[i] = arr[i - pedra];
             }
@@ -898,7 +890,7 @@ public class FileSystem {
             }
 
             entry.size = size;
-            //System.out.println(entry);
+            System.out.println(entry);
             writeBlock("filesystem.dat", entry.first_block, bloco);
 
             for (int i = 0; i < block_size; i++) {
