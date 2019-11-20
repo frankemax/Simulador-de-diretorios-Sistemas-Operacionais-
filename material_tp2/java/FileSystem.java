@@ -255,34 +255,6 @@ public class FileSystem {
         return -1;
     }
 
-    public static void apagaEncadeado(short n) {
-        System.out.println("n = " +n);
-        short a;
-
-        while (fat[n] != 0x7fff) {
-
-            System.out.println("fat" +fat[n]);
-            a=fat[n];
-            apagaEncadeadoAux(n);
-
-            n = a;
-            System.out.println("n2 = " +n);
-        }
-        apagaEncadeadoAux(n);
-    }
-
-    public static void apagaEncadeadoAux(short pos) {
-        byte[] db;
-        db = readBlock("filesystem.dat", pos);
-        for (int i = 0; i < block_size; i++) {
-            db[i] = 0;
-        }
-        fat[pos] = 0;
-        writeFat("filesystem.dat", fat);
-        writeBlock("filesystem.dat", pos, db);
-    }
-
-
     // 0x01 - arquivo
     // 0x02 - diretorio
     public static void procuraDiretorioeCria(String[] caminho, short blocoAtual, int count) {
@@ -333,8 +305,8 @@ public class FileSystem {
         if (caminho.length == count) {
             for (int i = 0; i < dir_entries; i++) {
                 dir_entry = readDirEntry(blocoAtual, i);
-                if(dir_entry.attributes!= 0)
-                    System.out.println((dir_entry.attributes==0x01?"Arquivo:   " + new String(dir_entry.filename):"Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
+                System.out.println("Entry " + i + ", file: " + new String(dir_entry.filename) + " attr: "
+                        + dir_entry.attributes + " first: " + dir_entry.first_block + " size: " + dir_entry.size);
             }
 
         } else {
@@ -369,8 +341,8 @@ public class FileSystem {
         if (path == null) {
             for (int i = 0; i < dir_entries; i++) {
                 dir_entry = readDirEntry(root_block, i);
-                if(dir_entry.attributes!= 0)
-                    System.out.println((dir_entry.attributes==0x01?"Arquivo:   " + new String(dir_entry.filename):"Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
+                System.out.println("Entry " + i + ", file: " + new String(dir_entry.filename) + " attr: "
+                        + dir_entry.attributes + " first: " + dir_entry.first_block + " size: " + dir_entry.size);
             }
             return;
         }
@@ -427,22 +399,32 @@ public class FileSystem {
         procuraDiretorioeCriaArquivo(caminho, (short) root_block, 0);
     }
 
-    private static boolean blocoIsEmpty(int blocoAtual) {
+    private static int existeNoBlocoInt(int blocoAtual, String path) {
+        boolean n = false;
+        byte[] t = path.getBytes();
         for (int i = 0; i < 32; i++) {
             DirEntry p = readDirEntry(blocoAtual, i);
 
-                if (p.attributes!=0){
-                    return true;
-                }
+            for (int j = 0; j < path.length(); j++) {
 
+                if (t[j] == p.filename[j]) {
+                    n = true;
+                } else {
+                    n = false;
+                    break;
+                }
+            }
+            if (n) {
+                return i;
+            }
         }
 
-        return false;
+        return -1;
     }
 
     public static void percorreFateLimpaBloco(short bloco) {
         byte[] db;
-        //System.out.println("bloco fat= " + bloco);
+        System.out.println("bloco fat= " + bloco);
 
         db = readBlock("filesystem.dat", bloco);
         for (int i = 0; i < block_size; i++) {
@@ -465,18 +447,11 @@ public class FileSystem {
                         aux = i;
                     }
                 }
-                DirEntry entry = readDirEntry(blocoAtual, aux);
 
-                if(blocoIsEmpty(entry.first_block) && entry.attributes==0x02){
-                    System.out.println("O diretório especificado não está vazio, nao foi possível exclui-lo");
-                    return;
-                }
-
-
+                byte[] file = new byte[25];
                 //byte atributos, short first_block, int size)
-
+                DirEntry entry = readDirEntry(blocoAtual, aux);
                 percorreFateLimpaBloco(entry.first_block);
-                apagaEncadeado(entry.first_block);
                 fat[entry.first_block] = 0;
                 writeFat("filesystem.dat", fat);
                 entry = instanciaDir("", (byte) 0, (short) 0, 0);
@@ -517,8 +492,8 @@ public class FileSystem {
     public static short[] getListFat(int n, String[] caminho) {
         int count = 1;
         short[] s = new short[n];
-        System.out.println("bloco " + getBlocoString(caminho,(short)root_block,0));
-        s[0]=  getBlocoString(caminho,(short)root_block,0);
+        System.out.println("bloco " + getBlocoString(caminho, (short) root_block, 0));
+        s[0] = getBlocoString(caminho, (short) root_block, 0);
         for (int i = 5; i < fat_size; i++) {
             if (fat[i] == 0) {
                 s[count] = (short) i;
@@ -536,7 +511,7 @@ public class FileSystem {
         if (str.getBytes().length > 1024) {
             writeCerto(caminho, str);
         } else {
-            writeAux(caminho, (short) root_block, 0, str,(short)-1,-1);
+            writeAux(caminho, (short) root_block, 0, str, (short) -1, -1);
         }
     }
 
@@ -559,9 +534,8 @@ public class FileSystem {
                     }
                 }
             }
-            DirEntry entry = readDirEntry(blocoAtual,aux);
+            DirEntry entry = readDirEntry(blocoAtual, aux);
             return entry.first_block;
-
 
         } else {
             boolean found = false;
@@ -589,10 +563,6 @@ public class FileSystem {
         }
         return -1;
     }
-
-
-
-
 
     public static void writeCerto(String[] caminho, String str) {
         int var = (int) Math.ceil(str.getBytes().length / 1024.0);
@@ -854,11 +824,32 @@ public class FileSystem {
 
     }
 
+    public static void apagaEncadeado(short n) {
+
+        while (fat[n] != 32766) {
+            System.out.println(fat[n]);
+            apagaEncadeadoAux(n);
+            n = fat[n];
+        }
+        apagaEncadeadoAux(n);
+    }
+
+    public static void apagaEncadeadoAux(short pos) {
+        byte[] db;
+        db = readBlock("filesystem.dat", pos);
+        for (int i = 0; i < block_size; i++) {
+            db[i] = 0;
+        }
+        fat[pos] = 0x0000;
+        writeFat("filesystem.dat", fat);
+        writeBlock("filesystem.dat", pos, db);
+    }
+
     public static void main(final String[] args) {
-        fat=readFat("filesystem.dat");
+        fat = readFat("filesystem.dat");
         laco:
         while (true) {
-            System.out.print("testShell@user:~" + "$ ");
+            System.out.print("\ntestShell@Shell:~" + "$ ");
             Scanner sc = new Scanner(System.in);
             String input = sc.nextLine();
             String[] inputArr = input.split(" ");
@@ -898,10 +889,10 @@ public class FileSystem {
                     read(inputArr[1]);
                     break;
                 case "apaga":
-                    apagaEncadeado((short)5);
+                    apagaEncadeado((short) 5);
+                    break;
             }
         }
-
-        /* list entries from the root directory */
+        writeFat("filesystem.dat", fat);
     }
 }
