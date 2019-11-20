@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.io.FilterInputStream;
+import java.nio.charset.StandardCharsets;
 
 public class FileSystem {
 
@@ -173,7 +174,6 @@ public class FileSystem {
         }
     }
 
-
     public static DirEntry instanciaDir(String nome, byte atributos, short first_block, int size) {
         DirEntry dir_entry = new DirEntry();
         String name = nome;
@@ -267,15 +267,12 @@ public class FileSystem {
             fat[firstBlock] = 0x7fff;
             writeFat("filesystem.dat", fat);
 
-
             DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x02, firstBlock, 0);
-            db = readBlock("filesystem.dat",blocoAtual);
-            writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry,db);
-
+            db = readBlock("filesystem.dat", blocoAtual);
+            writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry, db);
 
         } else {
             boolean found = false;
-
 
             for (int i = 0; i < dir_entry_size && found == false; i++) {
                 DirEntry entry = readDirEntry(blocoAtual, i);
@@ -368,9 +365,8 @@ public class FileSystem {
             writeFat("filesystem.dat", fat);
 
             DirEntry entry = instanciaDir(caminho[caminho.length - 1], (byte) 0x01, firstBlock, 0);
-            db = readBlock("filesystem.dat",blocoAtual);
-            writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry,db);
-
+            db = readBlock("filesystem.dat", blocoAtual);
+            writeDirEntry(blocoAtual, verificaVazio(blocoAtual), entry, db);
 
             //writeBlock("filesystem.dat", firstBlock, data_block);
         } else {
@@ -445,9 +441,9 @@ public class FileSystem {
 
     public static void procuraDiretorioeUnlinka(String[] caminho, short blocoAtual, int count) {
         //to do -> verificar se a pasta ta vazia
-    byte[] db;
+        byte[] db;
         // short firstBlock = primeiroBlocoVazioDaFat();
-        int aux=0;
+        int aux = 0;
         if (caminho.length - 1 == count) {
             if (existeNoBloco(blocoAtual, caminho[count])) {
 
@@ -460,22 +456,16 @@ public class FileSystem {
 
                 byte[] file = new byte[25];
                 //byte atributos, short first_block, int size)
-                DirEntry entry = readDirEntry(blocoAtual,aux);
-                fat[entry.first_block]=0;
+                DirEntry entry = readDirEntry(blocoAtual, aux);
+                fat[entry.first_block] = 0;
                 writeFat("filesystem.dat", fat);
-                 entry = instanciaDir("",(byte)0,(short)0,0);
+                entry = instanciaDir("", (byte) 0, (short) 0, 0);
 
+                db = readBlock("filesystem.dat", blocoAtual);
 
-                db = readBlock("filesystem.dat",blocoAtual);
-
-                writeDirEntry(blocoAtual, aux, entry,db);
-
-
+                writeDirEntry(blocoAtual, aux, entry, db);
 
                 //writeBlock("filesystem.dat", blocoAtual + existeNoBlocoInt(blocoAtual, caminho[count]) + 1, data_block);
-
-
-
                 return;
 
             }
@@ -504,6 +494,15 @@ public class FileSystem {
         }
     }
 
+    public static void write(String str, String path) {
+        String[] caminho = path.split("/");
+        if (str.getBytes().length > 1024) {
+            // to do
+        } else {
+            writeAux(caminho, (short) root_block, 0, str);
+        }
+    }
+
     private static void writeAux(String[] caminho, short blocoAtual, int count, String str) {
 
         // short firstBlock = primeiroBlocoVazioDaFat();
@@ -523,24 +522,22 @@ public class FileSystem {
                     }
                 }
             }
-
             byte[] arr = str.getBytes();
-            for (byte i:  arr) {
+            for (byte i : arr) {
                 System.out.println(i);
             }
 
-
             DirEntry entry1 = readDirEntry(blocoAtual, aux);
-            int blocoIniTam  = entry1.first_block;
+            int blocoIniTam = entry1.first_block;
 
             byte[] bloco = data_block;
 
-
             for (int i = 0; i < arr.length; i++) {
-                bloco[i]=arr[i];
+                bloco[i] = arr[i];
             }
-            for (int i = arr.length; i < bloco.length; i++) {
-                bloco[i]=0;
+
+            for (int i = arr.length + 1; i < bloco.length; i++) {
+                bloco[i] = 0;
             }
 
             DirEntry entry = readDirEntry(blocoAtual, aux);
@@ -551,7 +548,6 @@ public class FileSystem {
                 data_block[i] = 0;
             }
             //writeDirEntry(blocoAtual, aux, entry);
-
 
         } else {
             boolean found = false;
@@ -575,23 +571,152 @@ public class FileSystem {
         }
     }
 
+    public static void read(String path) {
+        String[] caminho = path.split("/");
+        readAux(caminho, (short) root_block, 0);
+    }
+
+    public static void readAux(String[] caminho, short blocoAtual, int count) {
+        DirEntry dir_entry = new DirEntry();
+
+        if (caminho.length - 1 == count) {
+            if (!existeNoBloco(blocoAtual, caminho[count])) {
+                System.out.println("O arquivo/entrada de diretório chamado " + caminho[count] + " nao existe");
+                return;
+            }
+            int aux = 0;
+            for (int i = 0; i < dir_entry_size; i++) {
+                DirEntry entry = readDirEntry(blocoAtual, i);
+                if (equal(entry.filename, caminho[count].getBytes())) {
+                    aux = i;
+                    if (entry.attributes == (byte) 0x02) {
+                        System.out.println("O caminho especificado é um diretório, e nao um arquivo");
+                        return;
+                    }
+                }
+            }
+
+            DirEntry entry = readDirEntry(blocoAtual, aux);
+            byte[] bloco = readBlock("filesystem.dat", entry.first_block);
+            System.out.println(new String(bloco));
+
+        } else {
+            boolean found = false;
+
+            byte[] file = caminho[count].getBytes();
+
+            for (int i = 0; i < dir_entry_size && found == false; i++) {
+                DirEntry entry = readDirEntry(blocoAtual, i);
+
+                if (equal(entry.filename, caminho[count].getBytes())) {
+
+                    found = true;
+                    if (entry.attributes == (byte) 0x01) {
+                        System.out.println(
+                                "O caminho especificado não é um diretório, e sim um arquivo, portanto nao pode ser listado. para ler, use o comando: read");
+                        break;
+                    }
+                    readAux(caminho, entry.first_block, count + 1);
+                }
+            }
+
+            if (found == false) {
+                System.out.println("Não há nenhum diretório chamado /" + caminho[count]);
+            }
+        }
+    }
+
+    public static void append(String str, String path) {
+        String[] caminho = path.split("/");
+        if (str.getBytes().length > 1024) {
+            // to do
+        } else {
+            appendAux(caminho, (short) root_block, 0, str);
+        }
+    }
+
+    private static void appendAux(String[] caminho, short blocoAtual, int count, String str) {
+
+        // short firstBlock = primeiroBlocoVazioDaFat();
+        if (caminho.length - 1 == count) {
+            if (!existeNoBloco(blocoAtual, caminho[count])) {
+                System.out.println("O arquivo/entrada de diretório chamado " + caminho[count] + " nao existe");
+                return;
+            }
+            int aux = 0;
+            for (int i = 0; i < dir_entry_size; i++) {
+                DirEntry entry = readDirEntry(blocoAtual, i);
+                if (equal(entry.filename, caminho[count].getBytes())) {
+                    aux = i;
+                    if (entry.attributes == (byte) 0x02) {
+                        System.out.println("O caminho especificado é um diretório, e nao um arquivo");
+                        return;
+                    }
+                }
+            }
+            byte[] arr = str.getBytes();
+            for (byte i : arr) {
+                System.out.println(i);
+            }
+
+            DirEntry entry = readDirEntry(blocoAtual, aux);
+            byte[] bloco = readBlock("filesystem.dat", entry.first_block);
+            int pedra = 0;
+            for (int i = 0; i < bloco.length; i++) {
+                if (bloco[i] == 0) {
+                    System.out.println();
+                    pedra = i;
+                    break;
+                }
+            }
+
+            for (int i = pedra; i < pedra + arr.length; i++) {
+                bloco[i] = arr[i - pedra];
+            }
+
+            for (int i = pedra + arr.length + 1; i < bloco.length; i++) {
+                bloco[i] = 0;
+            }
+
+            entry.size = arr.length;
+            writeBlock("filesystem.dat", entry.first_block, bloco);
+
+            for (int i = 0; i < block_size; i++) {
+                data_block[i] = 0;
+            }
+            //writeDirEntry(blocoAtual, aux, entry);
+
+        } else {
+            boolean found = false;
+
+            for (int i = 0; i < dir_entry_size && found == false; i++) {
+                DirEntry entry = readDirEntry(blocoAtual, i);
+
+                if (equal(entry.filename, caminho[count].getBytes())) {
+                    found = true;
+                    if (entry.attributes == (byte) 0x01) {
+                        System.out.println("O caminho especificado não é um diretório, e sim um arquivo");
+                        break;
+                    }
+                    appendAux(caminho, entry.first_block, count + 1, str);
+                }
+            }
+
+            if (found == false) {
+                System.out.println("Não há nenhum diretório chamado /" + caminho[count]);
+            }
+        }
+    }
+
     public static void unlink(String path) {
         String[] caminho = path.split("/");
         procuraDiretorioeUnlinka(caminho, (short) root_block, 0);
 
     }
 
-    public static void write(String str, String path) {
-        String[] caminho = path.split("/");
-        if (str.getBytes().length > 1024) {
-            // to do
-        } else {
-            writeAux(caminho, (short) root_block, 0, str);
-        }
-    }
-
     public static void main(final String[] args) {
-        laco: while (true) {
+        laco:
+        while (true) {
             System.out.print("testShell@Shell:~" + "$ ");
             Scanner sc = new Scanner(System.in);
             String input = sc.nextLine();
@@ -606,8 +731,9 @@ public class FileSystem {
                 case "ls":
                     if (inputArr.length == 1) {
                         ls(null);
-                    } else
+                    } else {
                         ls(inputArr[1]);
+                    }
                     break;
                 case "load":
                     primeiroBlocoVazioDaFat();
@@ -624,7 +750,12 @@ public class FileSystem {
                 case "unlink":
                     unlink(inputArr[1]);
                     break;
-
+                case "append":
+                    append(inputArr[1], inputArr[2]);
+                    break;
+                case "read":
+                    read(inputArr[1]);
+                    break;
             }
         }
 
