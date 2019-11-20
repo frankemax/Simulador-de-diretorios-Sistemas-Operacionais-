@@ -12,6 +12,7 @@ import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.io.FilterInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 public class FileSystem {
 
@@ -439,15 +440,15 @@ public class FileSystem {
         return -1;
     }
 
-    public static void percorreFateLimpaBloco(short bloco){
+    public static void percorreFateLimpaBloco(short bloco) {
         byte[] db;
         System.out.println("bloco fat= " + bloco);
 
-        db = readBlock("filesystem.dat",bloco);
+        db = readBlock("filesystem.dat", bloco);
         for (int i = 0; i < block_size; i++) {
-            db[i]=0;
+            db[i] = 0;
         }
-        writeBlock("filesystem.dat",bloco,db);
+        writeBlock("filesystem.dat", bloco, db);
     }
 
     public static void procuraDiretorioeUnlinka(String[] caminho, short blocoAtual, int count) {
@@ -472,7 +473,6 @@ public class FileSystem {
                 fat[entry.first_block] = 0;
                 writeFat("filesystem.dat", fat);
                 entry = instanciaDir("", (byte) 0, (short) 0, 0);
-
 
                 db = readBlock("filesystem.dat", blocoAtual);
 
@@ -507,13 +507,58 @@ public class FileSystem {
         }
     }
 
+    public static short[] getListFat(int n) {
+        int count = 0;
+        short[] s = new short[n];
+        for (int i = 5; i < fat_size; i++) {
+            if (fat[i] == 0) {
+                s[count] = (short) i;
+                count++;
+                if (count == n) {
+                    break;
+                }
+            }
+        }
+        return s;
+    }
+
     public static void write(String str, String path) {
         String[] caminho = path.split("/");
         if (str.getBytes().length > 1024) {
-            // to do
+            writeCerto(caminho, str);
         } else {
             writeAux(caminho, (short) root_block, 0, str);
         }
+    }
+
+    public static void writeCerto(String[] caminho, String str) {
+        int var = (int) Math.ceil(str.getBytes().length / 1024.0);
+        short[] lista = getListFat(var);
+        String[] text = new String[var];
+        for (int i = 0; i < var - 1; i++) {
+            text[i] = str.substring(i * 1024, (i * 1024) + 1024);
+        }
+        text[var - 1] = str.substring((var - 1) * 1024, str.length());
+        writeAux(caminho, (short) root_block, 0, text[0]);
+        for (int i = 1; i < var - 1; i++) {
+            metododoshell(lista[i], lista[i + 1], text[i]);
+        }
+        metododoshell(lista[var - 1], (short) 0x7fff, text[var - 1]);
+        System.out.println("Lista 0" + lista[0]);
+        fat[lista[0]] = lista[1];
+        writeFat("filesystem.dat", fat);
+    }
+
+    public static void metododoshell(short pos, short proximo, String s) {
+        byte[] db;
+        fat[pos] = proximo;
+        db = readBlock("filesystem.dat", pos);
+        byte[] arr = s.getBytes();
+        for (int i = 0; i < arr.length; i++) {
+            db[i] = arr[i];
+        }
+        writeFat("filesystem.dat", fat);
+        writeBlock("filesystem.dat", pos, db);
     }
 
     private static void writeAux(String[] caminho, short blocoAtual, int count, String str) {
@@ -557,8 +602,6 @@ public class FileSystem {
 
             writeDirEntry(blocoAtual, aux, entry, db);
             writeBlock("filesystem.dat", entry.first_block, bloco);
-
-
 
         } else {
             boolean found = false;
