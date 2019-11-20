@@ -241,7 +241,7 @@ public class FileSystem {
 
     public static short primeiroBlocoVazioDaFat() {
         for (int i = 5; i < fat_size; i++) {
-            System.out.printf("fat[%d] = %d \n", i, fat[i]);
+            //System.out.printf("fat[%d] = %d \n", i, fat[i]);
             if (fat[i] == 0) {
                 // System.out.println("entrou");
 
@@ -254,12 +254,12 @@ public class FileSystem {
     }
 
     public static void apagaEncadeado(short n) {
-        System.out.println("n = " + n);
+        //System.out.println("n = " + n);
         short a;
 
         while (fat[n] != 0x7fff) {
 
-            System.out.println("fat" + fat[n]);
+            //System.out.println("fat" + fat[n]);
             a = fat[n];
             apagaEncadeadoAux(n);
 
@@ -267,7 +267,7 @@ public class FileSystem {
                 break;
             }
             n = a;
-            System.out.println("n2 = " + n);
+            //System.out.println("n2 = " + n);
         }
         apagaEncadeadoAux(n);
     }
@@ -457,7 +457,6 @@ public class FileSystem {
     }
 
     public static void procuraDiretorioeUnlinka(String[] caminho, short blocoAtual, int count) {
-        //to do -> verificar se a pasta ta vazia
         byte[] db;
         // short firstBlock = primeiroBlocoVazioDaFat();
         int aux = 0;
@@ -520,7 +519,7 @@ public class FileSystem {
     public static short[] getListFat(int n, String[] caminho) {
         int count = 1;
         short[] s = new short[n];
-        System.out.println("bloco " + getBlocoString(caminho, (short) root_block, 0));
+       // System.out.println("bloco " + getBlocoString(caminho, (short) root_block, 0));
         s[0] = getBlocoString(caminho, (short) root_block, 0);
         for (int i = 5; i < fat_size; i++) {
             if (fat[i] == 0) {
@@ -825,7 +824,7 @@ public class FileSystem {
         String[] caminho = path.split("/");
         int b = getBlocoTam(caminho, (short) root_block, 0);
         int tam = b + str.getBytes().length;
-        System.out.println("AQUI " + tam);
+        //System.out.println("AQUI " + tam);
         if (tam >= 1024) {
             int var = (int) Math.ceil(tam / 1024.0);
             short[] lista = getListFat(var, caminho);
@@ -833,10 +832,10 @@ public class FileSystem {
             String cortada = str.substring(0, 1024 - b);
             text[0] = cortada;
             appendAux(caminho, (short) root_block, 0, text[0], tam);
-            
+
             str = str.substring(1024 - b, str.length());
             var = (int) Math.ceil(str.length() / 1024.0);
-            System.out.println("AAAAAAAAAAA "+cortada.length());
+           
             for (int i = 0; i < var - 1; i++) {
                 System.out.println(str.length()+" UUUU" + ((i * 1024) + 1024));
                 if (((i * 1024) + 1024) > str.length()) {
@@ -845,8 +844,8 @@ public class FileSystem {
                 text[i] = str.substring(i * (1024), (i * 1024) + 1024);
             }
             text[var - 1] = str.substring((var - 1) * 1024, str.length());
-            System.out.println("FINAL "+text[0].length());
-            
+           // System.out.println("FINAL "+text[0].length());
+
             for (int i = 0; i < var - 1; i++) {
                 metododoshell(lista[i], lista[i + 1], text[i]);
             }
@@ -884,12 +883,12 @@ public class FileSystem {
             int pedra = 0;
             for (int i = 0; i < bloco.length; i++) {
                 if (bloco[i] == 0) {
-                    System.out.println();
+                    //System.out.println();
                     pedra = i;
                     break;
                 }
             }
-            System.out.println("aaaaaa" + (pedra));
+            //System.out.println("aaaaaa" + (pedra));
             for (int i = pedra; i < pedra + arr.length; i++) {
                 bloco[i] = arr[i - pedra];
             }
@@ -899,7 +898,7 @@ public class FileSystem {
             }
 
             entry.size = size;
-            System.out.println(entry);
+            //System.out.println(entry);
             writeBlock("filesystem.dat", entry.first_block, bloco);
 
             for (int i = 0; i < block_size; i++) {
