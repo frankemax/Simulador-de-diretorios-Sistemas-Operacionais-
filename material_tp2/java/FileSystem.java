@@ -58,7 +58,7 @@ public class FileSystem {
     }
 
     /* reads the FAT from disk */
-    public static short[] readFat(final String file) {
+    public static short[] readFat(final String file, boolean b) {
         final short[] record = new short[blocks];
         try {
             final RandomAccessFile fileStore = new RandomAccessFile(file, "rw");
@@ -68,6 +68,10 @@ public class FileSystem {
             }
             fileStore.close();
         } catch (final IOException e) {
+            if(b){
+                init();
+                return readFat("filesystem.dat", false);
+            }
             e.printStackTrace();
         }
 
@@ -666,7 +670,7 @@ public class FileSystem {
                 bloco[i] = arr[i];
             }
 
-            for (int i = arr.length + 1; i < bloco.length; i++) {
+            for (int i = arr.length; i < bloco.length; i++) {
                 bloco[i] = 0;
             }
 
@@ -867,7 +871,7 @@ public class FileSystem {
     }
 
     public static void main(final String[] args) {
-        fat = readFat("filesystem.dat");
+        fat = readFat("filesystem.dat", true);
         laco:
         while (true) {
             System.out.print("\ntestShell@user:~" + "$ ");
@@ -914,6 +918,5 @@ public class FileSystem {
             }
         }
 
-        /* list entries from the root directory */
     }
 }
