@@ -26,7 +26,7 @@ public class FileSystem {
     static String currentPath = "root";
 
     /* FAT data structure */
-    static short[] fat = new short[blocks];
+    final static short[] fat = new short[blocks];
     /* data block */
     final static byte[] data_block = new byte[block_size];
 
@@ -305,9 +305,8 @@ public class FileSystem {
         if (caminho.length == count) {
             for (int i = 0; i < dir_entries; i++) {
                 dir_entry = readDirEntry(blocoAtual, i);
-                if (dir_entry.attributes != 0) {
-                    System.out.println((dir_entry.attributes == 0x01 ? "Arquivo:   " + new String(dir_entry.filename) : "Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
-                }
+                if(dir_entry.attributes!= 0)
+                    System.out.println((dir_entry.attributes==0x01?"Arquivo:   " + new String(dir_entry.filename):"Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
             }
 
         } else {
@@ -341,9 +340,9 @@ public class FileSystem {
 
         if (path == null) {
             for (int i = 0; i < dir_entries; i++) {
-                if (dir_entry.attributes != 0) {
-                    System.out.println((dir_entry.attributes == 0x01 ? "Arquivo:   " + new String(dir_entry.filename) : "Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
-                }
+                dir_entry = readDirEntry(root_block, i);
+                if(dir_entry.attributes!= 0)
+                    System.out.println((dir_entry.attributes==0x01?"Arquivo:   " + new String(dir_entry.filename):"Diretorio: " + new String(dir_entry.filename)) + "size: " + dir_entry.size);
             }
             return;
         }
@@ -404,9 +403,9 @@ public class FileSystem {
         for (int i = 0; i < 32; i++) {
             DirEntry p = readDirEntry(blocoAtual, i);
 
-            if (p.attributes != 0) {
-                return true;
-            }
+                if (p.attributes!=0){
+                    return true;
+                }
 
         }
 
@@ -439,12 +438,14 @@ public class FileSystem {
                     }
                 }
                 DirEntry entry = readDirEntry(blocoAtual, aux);
-                if (blocoIsEmpty(entry.first_block)) {
+
+                if(blocoIsEmpty(entry.first_block)){
                     System.out.println("O diretório especificado não está vazio, nao foi possível exclui-lo");
                     return;
                 }
                 byte[] file = new byte[25];
                 //byte atributos, short first_block, int size)
+
                 percorreFateLimpaBloco(entry.first_block);
                 fat[entry.first_block] = 0;
                 writeFat("filesystem.dat", fat);
@@ -486,8 +487,8 @@ public class FileSystem {
     public static short[] getListFat(int n, String[] caminho) {
         int count = 1;
         short[] s = new short[n];
-        System.out.println("bloco " + getBlocoString(caminho, (short) root_block, 0));
-        s[0] = getBlocoString(caminho, (short) root_block, 0);
+        System.out.println("bloco " + getBlocoString(caminho,(short)root_block,0));
+        s[0]=  getBlocoString(caminho,(short)root_block,0);
         for (int i = 5; i < fat_size; i++) {
             if (fat[i] == 0) {
                 s[count] = (short) i;
@@ -505,7 +506,7 @@ public class FileSystem {
         if (str.getBytes().length > 1024) {
             writeCerto(caminho, str);
         } else {
-            writeAux(caminho, (short) root_block, 0, str, (short) -1, -1);
+            writeAux(caminho, (short) root_block, 0, str,(short)-1);
         }
     }
 
@@ -528,8 +529,9 @@ public class FileSystem {
                     }
                 }
             }
-            DirEntry entry = readDirEntry(blocoAtual, aux);
+            DirEntry entry = readDirEntry(blocoAtual,aux);
             return entry.first_block;
+
 
         } else {
             boolean found = false;
@@ -566,7 +568,7 @@ public class FileSystem {
             text[i] = str.substring(i * 1024, (i * 1024) + 1024);
         }
         text[var - 1] = str.substring((var - 1) * 1024, str.length());
-        writeAux(caminho, (short) root_block, 0, text[0], lista[1], str.length());
+        writeAux(caminho, (short) root_block, 0, text[0],lista[1]);
         for (int i = 1; i < var - 1; i++) {
             metododoshell(lista[i], lista[i + 1], text[i]);
         }
@@ -588,7 +590,8 @@ public class FileSystem {
         writeBlock("filesystem.dat", pos, db);
     }
 
-    private static void writeAux(String[] caminho, short blocoAtual, int count, String str, short a, int size) {
+    private static void writeAux(String[] caminho, short blocoAtual, int count, String str, short a ) {
+
 
         // short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
@@ -608,16 +611,13 @@ public class FileSystem {
                 }
             }
 
-            if (a != -1) {
+            if(a != -1){
                 fat[blocoAtual] = a;
-                writeFat("filesystem.dat", fat);
+                writeFat("filesystem.dat",fat);
             }
             byte[] db;
             db = readBlock("filesystem.dat", blocoAtual);
             byte[] arr = str.getBytes();
-            for (byte i : arr) {
-                System.out.println(i);
-            }
 
             byte[] bloco = data_block;
 
@@ -630,11 +630,7 @@ public class FileSystem {
             }
 
             DirEntry entry = readDirEntry(blocoAtual, aux);
-            if (size != -1) {
-                entry.size = size;
-            } else {
-                entry.size = arr.length;
-            }
+            entry.size = arr.length;
 
             writeDirEntry(blocoAtual, aux, entry, db);
             writeBlock("filesystem.dat", entry.first_block, bloco);
@@ -651,7 +647,7 @@ public class FileSystem {
                         System.out.println("O caminho especificado não é um diretório, e sim um arquivo");
                         break;
                     }
-                    writeAux(caminho, entry.first_block, count + 1, str, a, -1);
+                    writeAux(caminho, entry.first_block, count + 1, str,a);
                 }
             }
 
@@ -664,17 +660,6 @@ public class FileSystem {
     public static void read(String path) {
         String[] caminho = path.split("/");
         readAux(caminho, (short) root_block, 0);
-    }
-
-    public static void readEncadeado(short n) {
-        byte[] bloco;
-        while (fat[n] != 0x7fff) {
-            bloco = readBlock("filesystem.dat", n);
-            System.out.println(new String(bloco));
-            n = fat[n];
-        }
-        bloco = readBlock("filesystem.dat", n);
-        System.out.print(new String(bloco));
     }
 
     public static void readAux(String[] caminho, short blocoAtual, int count) {
@@ -701,9 +686,6 @@ public class FileSystem {
             byte[] bloco = readBlock("filesystem.dat", entry.first_block);
             System.out.println(new String(bloco));
 
-            if (fat[entry.first_block] != 0x7fff) {
-                readEncadeado(fat[entry.first_block]);
-            }
         } else {
             boolean found = false;
 
@@ -818,33 +800,10 @@ public class FileSystem {
 
     }
 
-    public static void apagaEncadeado(String path, short n) {
-        String[] caminho = path.split("/");
-
-        while (fat[n] != 0x7fff) {
-            apagaEncadeadoAux(n);
-            n = fat[n];
-        }
-        apagaEncadeadoAux(n);
-    }
-
-    public static void apagaEncadeadoAux(short pos) {
-        byte[] db;
-        //fat[pos] = proximo;
-        db = readBlock("filesystem.dat", pos);
-        byte[] arr = "".getBytes();
-        for (int i = 0; i < arr.length; i++) {
-            db[i] = arr[i];
-        }
-        writeFat("filesystem.dat", fat);
-        writeBlock("filesystem.dat", pos, db);
-    }
-
     public static void main(final String[] args) {
-        fat = readFat("filesystem.dat");
         laco:
         while (true) {
-            System.out.print("\ntestShell@user:~" + "$ ");
+            System.out.print("testShell@user:~" + "$ ");
             Scanner sc = new Scanner(System.in);
             String input = sc.nextLine();
             String[] inputArr = input.split(" ");
@@ -885,6 +844,7 @@ public class FileSystem {
                     break;
             }
         }
-        writeFat("filesystem.dat", fat);
+
+        /* list entries from the root directory */
     }
 }
