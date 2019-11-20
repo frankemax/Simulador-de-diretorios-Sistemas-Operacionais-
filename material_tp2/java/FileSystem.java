@@ -26,7 +26,7 @@ public class FileSystem {
     static String currentPath = "root";
 
     /* FAT data structure */
-    final static short[] fat = new short[blocks];
+    static short[] fat = new short[blocks];
     /* data block */
     final static byte[] data_block = new byte[block_size];
 
@@ -243,7 +243,7 @@ public class FileSystem {
 
     public static short primeiroBlocoVazioDaFat() {
         for (int i = 5; i < fat_size; i++) {
-            //System.out.printf("fat[%d] = %d \n", i, fat[i]);
+            System.out.printf("fat[%d] = %d \n", i, fat[i]);
             if (fat[i] == 0) {
                 // System.out.println("entrou");
 
@@ -506,7 +506,7 @@ public class FileSystem {
         if (str.getBytes().length > 1024) {
             writeCerto(caminho, str);
         } else {
-            writeAux(caminho, (short) root_block, 0, str,(short)-1);
+            writeAux(caminho, (short) root_block, 0, str,(short)-1,-1);
         }
     }
 
@@ -560,6 +560,10 @@ public class FileSystem {
         return -1;
     }
 
+
+
+
+
     public static void writeCerto(String[] caminho, String str) {
         int var = (int) Math.ceil(str.getBytes().length / 1024.0);
         short[] lista = getListFat(var, caminho);
@@ -568,7 +572,7 @@ public class FileSystem {
             text[i] = str.substring(i * 1024, (i * 1024) + 1024);
         }
         text[var - 1] = str.substring((var - 1) * 1024, str.length());
-        writeAux(caminho, (short) root_block, 0, text[0],lista[1]);
+        writeAux(caminho, (short) root_block, 0, text[0], lista[1], str.length());
         for (int i = 1; i < var - 1; i++) {
             metododoshell(lista[i], lista[i + 1], text[i]);
         }
@@ -590,8 +594,7 @@ public class FileSystem {
         writeBlock("filesystem.dat", pos, db);
     }
 
-    private static void writeAux(String[] caminho, short blocoAtual, int count, String str, short a ) {
-
+    private static void writeAux(String[] caminho, short blocoAtual, int count, String str, short a, int size) {
 
         // short firstBlock = primeiroBlocoVazioDaFat();
         if (caminho.length - 1 == count) {
@@ -611,13 +614,16 @@ public class FileSystem {
                 }
             }
 
-            if(a != -1){
+            if (a != -1) {
                 fat[blocoAtual] = a;
-                writeFat("filesystem.dat",fat);
+                writeFat("filesystem.dat", fat);
             }
             byte[] db;
             db = readBlock("filesystem.dat", blocoAtual);
             byte[] arr = str.getBytes();
+            for (byte i : arr) {
+                System.out.println(i);
+            }
 
             byte[] bloco = data_block;
 
@@ -630,7 +636,11 @@ public class FileSystem {
             }
 
             DirEntry entry = readDirEntry(blocoAtual, aux);
-            entry.size = arr.length;
+            if (size != -1) {
+                entry.size = size;
+            } else {
+                entry.size = arr.length;
+            }
 
             writeDirEntry(blocoAtual, aux, entry, db);
             writeBlock("filesystem.dat", entry.first_block, bloco);
@@ -647,7 +657,7 @@ public class FileSystem {
                         System.out.println("O caminho especificado não é um diretório, e sim um arquivo");
                         break;
                     }
-                    writeAux(caminho, entry.first_block, count + 1, str,a);
+                    writeAux(caminho, entry.first_block, count + 1, str, a, -1);
                 }
             }
 
@@ -660,6 +670,17 @@ public class FileSystem {
     public static void read(String path) {
         String[] caminho = path.split("/");
         readAux(caminho, (short) root_block, 0);
+    }
+
+    public static void readEncadeado(short n) {
+        byte[] bloco;
+        while (fat[n] != 0x7fff) {
+            bloco = readBlock("filesystem.dat", n);
+            System.out.println(new String(bloco));
+            n = fat[n];
+        }
+        bloco = readBlock("filesystem.dat", n);
+        System.out.print(new String(bloco));
     }
 
     public static void readAux(String[] caminho, short blocoAtual, int count) {
@@ -686,6 +707,9 @@ public class FileSystem {
             byte[] bloco = readBlock("filesystem.dat", entry.first_block);
             System.out.println(new String(bloco));
 
+            if (fat[entry.first_block] != 0x7fff) {
+                readEncadeado(fat[entry.first_block]);
+            }
         } else {
             boolean found = false;
 
@@ -801,6 +825,7 @@ public class FileSystem {
     }
 
     public static void main(final String[] args) {
+        fat=readFat("filesystem.dat");
         laco:
         while (true) {
             System.out.print("testShell@user:~" + "$ ");
