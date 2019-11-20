@@ -267,11 +267,17 @@ public class FileSystem {
 
             n = a;
             System.out.println("n2 = " +n);
+            if(n>=2048){
+                break;
+            }
         }
         apagaEncadeadoAux(n);
     }
 
     public static void apagaEncadeadoAux(short pos) {
+        if(pos >=2048){
+            return;
+        }
         byte[] db;
         db = readBlock("filesystem.dat", pos);
         for (int i = 0; i < block_size; i++) {
